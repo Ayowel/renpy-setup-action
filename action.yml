@@ -1,0 +1,25 @@
+name: "Setup Ren'Py Environment"
+description: "Setup Ren'Py"
+inputs:
+  dlc:
+    description: "Comma-separated list of dlcs to install"
+    required: false
+  install_dir:
+    description: "Where Ren'Py should be installed"
+    required: false
+  live2d:
+    description: "Live2D url of the file to install (Live2D won't be installed if this is not set)"
+    required: false
+  version:
+    description: "Ren'Py version to install"
+    required: true
+outputs:
+  install_dir:
+    description: "The directory where Ren'Py is installed"
+  python_path:
+    description: "The Python executable provided by Ren'Py"
+  renpy_path:
+    description: "The Ren'Py executable"
+runs:
+  using: "node16"
+  main: "dist/setup/index.js"
