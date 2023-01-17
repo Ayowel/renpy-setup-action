@@ -14936,15 +14936,19 @@ class RenpyInstaller {
             const core_archive = yield tc.downloadTool(core_url);
             core.debug(`Start extraction of Ren'Py archive ${core_archive}`);
             fs_1.default.mkdirSync(this.install_dir, { recursive: true });
-            const out = yield tc.extractTar(core_archive, this.install_dir, 'x');
+            const out = yield tc.extractTar(core_archive, this.install_dir, ['x', '--strip-components=1']);
         });
     }
     getMetadata() {
         return this.meta;
     }
     getEffectiveDir() {
-        const subdir = fs_1.default.readdirSync(this.install_dir)[0];
-        return path_1.default.join(this.install_dir, subdir);
+        if (fs_1.default.existsSync(this.install_dir)) {
+            return this.install_dir;
+        }
+        else {
+            throw Error("Can't get effective directory for Ren'Py as it is not installed yet");
+        }
     }
     getPythonPath() {
         const dir = this.getEffectiveDir();

@@ -61,7 +61,7 @@ export class RenpyInstaller {
     const core_archive = await tc.downloadTool(core_url);
     core.debug(`Start extraction of Ren'Py archive ${core_archive}`);
     fs.mkdirSync(this.install_dir, { recursive: true });
-    const out = await tc.extractTar(core_archive, this.install_dir, 'x');
+    const out = await tc.extractTar(core_archive, this.install_dir, ['x', '--strip-components=1']);
   }
 
   public getMetadata(): RenpyRootFile | undefined {
@@ -69,8 +69,11 @@ export class RenpyInstaller {
   }
 
   public getEffectiveDir(): string {
-    const subdir = fs.readdirSync(this.install_dir)[0];
-    return path.join(this.install_dir, subdir);
+    if (fs.existsSync(this.install_dir)) {
+      return this.install_dir;
+    } else {
+      throw Error("Can't get effective directory for Ren'Py as it is not installed yet");
+    }
   }
 
   public getPythonPath(): string {
