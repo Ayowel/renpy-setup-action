@@ -1,18 +1,20 @@
 import fs from 'fs';
 import path from 'path';
 
-import * as core from '@actions/core';
 import * as httpm from '@actions/http-client';
 import * as tc from '@actions/tool-cache';
 import * as tar from 'tar';
 
+import { getLogger } from './io';
+import { RenpyInstallerOptions } from './models';
 import {
   RenpyRootFile,
   RenpyUpdateFile,
   RenpyDlcUpdateInfo,
   RenpyDlcUpdateCurrent
 } from './renpy_models';
-import { RenpyInstallerOptions } from './models';
+
+const logger = getLogger();
 
 const python_paths = [
   'lib/py3-linux-x86_64/python',
@@ -55,11 +57,11 @@ export class RenpyInstaller {
       );
     }
 
-    core.info("Downloading Ren'Py archive");
+    logger.info("Downloading Ren'Py archive");
     const core_url = `${this.base_url}/renpy-${this.version}-sdk.tar.bz2`;
-    core.debug(`Download from ${core_url}`);
+    logger.debug(`Download from ${core_url}`);
     const core_archive = await tc.downloadTool(core_url);
-    core.debug(`Start extraction of Ren'Py archive ${core_archive}`);
+    logger.debug(`Start extraction of Ren'Py archive ${core_archive}`);
     fs.mkdirSync(this.install_dir, { recursive: true });
     const out = await tc.extractTar(core_archive, this.install_dir, ['x', '--strip-components=1']);
   }
@@ -109,7 +111,7 @@ export class RenpyInstaller {
 
     // Get metadata
     const json_url = `${this.base_url}/${dlc_info.json_url}`;
-    core.debug(`Load update metadata for ${dlc} from ${json_url}.`);
+    logger.debug(`Load update metadata for ${dlc} from ${json_url}.`);
     const dlc_content = (await this.http.getJson<RenpyUpdateFile>(json_url)).result;
     if (!dlc_content || !dlc_content[dlc]) {
       throw Error(`Failed to read dlc update file for (${dlc}).`);
@@ -118,9 +120,9 @@ export class RenpyInstaller {
     // Download & extract files
     const gz_name = path.basename(dlc_info.json_url, '.json');
     const gz_url = `${this.base_url}/${gz_name}.gz`;
-    core.debug(`Download from ${gz_url}.`);
+    logger.debug(`Download from ${gz_url}.`);
     const gz_file = await tc.downloadTool(gz_url);
-    core.debug(`Extracting downloaded dlc file.`);
+    logger.debug(`Extracting downloaded dlc file.`);
     const out_dir = this.getEffectiveDir();
 
     const file_list = this.buildDlcFilelist(dlc_content[dlc]);
@@ -132,7 +134,6 @@ export class RenpyInstaller {
       },
       file_list
     );
-    //core.debug(`Update current index.`);
     // TODO: extract update/current.json content and call updateCurrentJson
   }
 
