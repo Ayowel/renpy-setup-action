@@ -1,62 +1,47 @@
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-
-import * as core from '@actions/core';
-
-import { RenpyInstallerOptions } from './models';
+import { getLogger, parseInputs, writeOutputs, fail } from './io';
 import { RenpyInstaller } from './installer';
+
+const logger = getLogger();
 
 async function main() {
   try {
-    /* Get inputs */
-    const version = core.getInput('version');
-    let install_dir = core.getInput('install_dir');
+    const opts = parseInputs();
 
-    core.startGroup("Install Ren'Py components");
-    let opts: RenpyInstallerOptions = {
-      version,
-      dlc_list: core
-        .getInput('dlc')
-        .split(',')
-        .map(v => v.trim())
-        .filter(s => !!s),
-      live2d_url: core.getInput('live2d'),
-      install_dir: install_dir ? install_dir : path.join(os.homedir(), '.renpy_exec', version)
-    };
-
+    logger.startGroup("Install Ren'Py components");
     const installer = new RenpyInstaller(opts);
     await installer.load();
-    core.info(`Installing Ren'Py version ${version}`);
+    logger.info(`Installing Ren'Py version ${opts.version}`);
     await installer.installCore();
-    core.endGroup();
+    logger.endGroup();
 
-    core.startGroup('Install DLCs');
+    logger.startGroup('Install DLCs');
     if (opts.dlc_list.length > 0) {
       for (const dlc of opts.dlc_list) {
-        core.info(`Installing DLC ${dlc}.`);
+        logger.info(`Installing DLC ${dlc}.`);
         installer.installDlc(dlc);
       }
     } else {
-      core.info('No DLC to install.');
+      logger.info('No DLC to install.');
     }
-    core.endGroup();
+    logger.endGroup();
 
-    core.startGroup('Install Live2D');
+    logger.startGroup('Install Live2D');
     if (opts.live2d_url) {
-      core.error('Live2D is not supported yet.');
+      logger.error('Live2D is not supported yet.');
     } else {
-      core.info('Skip Live2D install');
+      logger.info('Skip Live2D install');
     }
-    core.endGroup();
+    logger.endGroup();
 
-    core.startGroup('Write action outputs');
-    core.setOutput('install_dir', installer.getEffectiveDir());
-    core.setOutput('python_path', installer.getPythonPath());
-    core.setOutput('renpy_path', installer.getRenpyPath());
-    core.endGroup();
+    logger.startGroup('Write action outputs');
+    writeOutputs({
+      install_dir: installer.getEffectiveDir(),
+      python_path: installer.getPythonPath(),
+      renpy_path: installer.getRenpyPath()
+    });
+    logger.endGroup();
   } catch (error) {
-    core.setFailed(error as Error);
+    fail(error as Error);
   }
 }
 
