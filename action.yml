@@ -1,5 +1,8 @@
 name: "Setup Ren'Py Environment"
 description: "Setup Ren'Py"
+branding:
+  color: blue
+  icon: aperture
 inputs:
   dlc:
     description: "Comma-separated list of dlcs to install"
