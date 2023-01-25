@@ -14849,6 +14849,168 @@ exports["default"] = _default;
 
 /***/ }),
 
+/***/ 2384:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RenpyExecutor = void 0;
+const cp = __importStar(__nccwpck_require__(2081));
+const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
+const io_1 = __nccwpck_require__(8672);
+const utils_1 = __nccwpck_require__(1314);
+const logger = (0, io_1.getLogger)();
+var RenpyExecutableName;
+(function (RenpyExecutableName) {
+    RenpyExecutableName["Linux"] = "renpy.sh";
+    RenpyExecutableName["Mac"] = "renpy.dmg";
+    RenpyExecutableName["Windows"] = "renpy.exe";
+})(RenpyExecutableName || (RenpyExecutableName = {}));
+class RenpyExecutor {
+    constructor(directory) {
+        this.directory = directory;
+    }
+    distribute(game, opts) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const generic_pkg = opts.packages.filter(s => typeof s == 'string');
+            const targeted_pkg = opts.packages.filter(s => typeof s != 'string');
+            if (generic_pkg.length > 0) {
+                const args = ['', 'distribute', game];
+                generic_pkg.forEach(p => args.push('--package', p));
+                if (opts.target_dir) {
+                    args.push('--destination', opts.target_dir);
+                }
+                logger.info(`Building distributions for ${generic_pkg}`);
+                yield this.execute(args);
+                logger.info('Done');
+            }
+            for (const pkg_info of targeted_pkg) {
+                const args = ['', 'distribute', game];
+                args.push('--package', pkg_info[0]);
+                args.push('--packagedest', pkg_info[1]);
+                const target_dir = path.dirname(pkg_info[1]);
+                if (target_dir) {
+                    fs.mkdirSync(target_dir, { recursive: true });
+                }
+                logger.info(`Building distribution for ${pkg_info[0]}`);
+                yield this.execute(args);
+                logger.info('Done');
+            }
+        });
+    }
+    lint(game, opts) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const [stdout, stderr] = yield this.execute([game, 'lint', '--error-code']);
+            logger.info(stdout);
+            logger.warning(stderr);
+        });
+    }
+    execute(args) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                let stdout = '';
+                let stderr = '';
+                logger.debug(`Execute command "${this.getRenpyPath()}" ${args}`);
+                const child = cp.spawn(this.getRenpyPath(), args);
+                const log = (logger, message) => {
+                    const messages = typeof message == 'string' ? message.split('\n') : message;
+                    messages.forEach(line => {
+                        logger(`${child.pid} ${line}`);
+                    });
+                };
+                child.stdout.on('data', data => {
+                    stdout += data;
+                    log(logger.debug, '' + data);
+                });
+                child.stderr.on('data', data => {
+                    stderr += data;
+                    log(logger.debug, '' + data);
+                });
+                child.on('close', status => {
+                    if (status == 0) {
+                        resolve([stdout, stderr]);
+                    }
+                    else {
+                        log(logger.error, [
+                            `Child process ${child.pid} failed with error code ${status}`,
+                            `${stdout}`,
+                            `${stderr}`
+                        ].join('\n\n'));
+                        reject(Error(`${child.pid} Failed to execute command "${this.getRenpyPath()}" ${args}`));
+                    }
+                });
+            });
+        });
+    }
+    getDirectory() {
+        return this.directory;
+    }
+    getPythonPath() {
+        const os = (0, utils_1.pickOsValue)('windows', 'linux', 'mac');
+        const ext = (0, utils_1.pickOsValue)('.exe', '', '');
+        const python_paths = [
+            `lib/py3-${os}-x86_64/python${ext}`,
+            `lib/py2-${os}-x86_64/python${ext}`,
+            `lib/${os}-x86_64/python${ext}`
+        ];
+        for (const p of python_paths) {
+            const candidate_path = path.join(this.directory, p);
+            if (fs.existsSync(candidate_path)) {
+                return candidate_path;
+            }
+        }
+        throw Error("Failed to find Python executable in Ren'Py directory.");
+    }
+    getRenpyPath() {
+        const exec_name = (0, utils_1.pickOsValue)(RenpyExecutableName.Windows, RenpyExecutableName.Linux, RenpyExecutableName.Mac);
+        const renpy_path = path.join(this.directory, exec_name);
+        if (fs.existsSync(renpy_path)) {
+            return renpy_path;
+        }
+        else {
+            throw Error("Failed to find Ren'Py executable in Ren'Py directory.");
+        }
+    }
+}
+exports.RenpyExecutor = RenpyExecutor;
+
+
+/***/ }),
+
 /***/ 2574:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -14897,21 +15059,45 @@ const core = __importStar(__nccwpck_require__(2186));
 const httpm = __importStar(__nccwpck_require__(6255));
 const tc = __importStar(__nccwpck_require__(7784));
 const tar = __importStar(__nccwpck_require__(4674));
-const python_paths = [
-    'lib/py3-linux-x86_64/python',
-    'lib/py2-mac-x86_64/python',
-    'lib/linux-x86_64/python'
-];
+const io_1 = __nccwpck_require__(8672);
+const logger = (0, io_1.getLogger)();
 class RenpyInstaller {
-    constructor(options) {
-        this.http = new httpm.HttpClient('ayowel/setup-renpy', undefined, {
+    constructor(directory, version) {
+        this.http = new httpm.HttpClient('github/ayowel/setup-renpy', undefined, {
             allowRetries: true,
             maxRetries: 3
         });
-        this.version = options.version;
-        this.install_dir = options.install_dir;
+        this.version = version;
+        this.install_dir = directory;
         this.meta = undefined;
         this.base_url = `https://www.renpy.org/dl/${this.version}`;
+    }
+    install(opts) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.load();
+            logger.info(`Installing Ren'Py version ${opts.version}`);
+            yield this.installCore();
+            if (opts.dlc_list.length > 0) {
+                logger.info('Install DLCs');
+                for (const dlc of opts.dlc_list) {
+                    logger.info(`Installing DLC ${dlc}.`);
+                    yield this.installDlc(dlc);
+                }
+            }
+            else {
+                logger.debug('No DLC to install.');
+            }
+            if (opts.live2d_url) {
+                logger.info('Install Live2D');
+                logger.error('Live2D is not supported yet.');
+            }
+            else {
+                logger.debug('No configured Live2D source');
+            }
+            if (opts.update_path) {
+                core.addPath(this.install_dir);
+            }
+        });
     }
     load() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -14930,45 +15116,17 @@ class RenpyInstaller {
             if (fs_1.default.existsSync(this.install_dir)) {
                 throw Error(`The Ren'Py install directory exists before install. This is not supported. (path: ${this.install_dir})`);
             }
-            core.info("Downloading Ren'Py archive");
+            logger.info("Downloading Ren'Py archive");
             const core_url = `${this.base_url}/renpy-${this.version}-sdk.tar.bz2`;
-            core.debug(`Download from ${core_url}`);
+            logger.debug(`Download from ${core_url}`);
             const core_archive = yield tc.downloadTool(core_url);
-            core.debug(`Start extraction of Ren'Py archive ${core_archive}`);
+            logger.debug(`Start extraction of Ren'Py archive ${core_archive}`);
             fs_1.default.mkdirSync(this.install_dir, { recursive: true });
             const out = yield tc.extractTar(core_archive, this.install_dir, ['x', '--strip-components=1']);
         });
     }
     getMetadata() {
         return this.meta;
-    }
-    getEffectiveDir() {
-        if (fs_1.default.existsSync(this.install_dir)) {
-            return this.install_dir;
-        }
-        else {
-            throw Error("Can't get effective directory for Ren'Py as it is not installed yet");
-        }
-    }
-    getPythonPath() {
-        const dir = this.getEffectiveDir();
-        for (const p of python_paths) {
-            const candidate_path = path_1.default.join(dir, p);
-            if (fs_1.default.existsSync(candidate_path)) {
-                return candidate_path;
-            }
-        }
-        throw Error("Failed to find Python executable in Ren'Py directory.");
-    }
-    getRenpyPath() {
-        const dir = this.getEffectiveDir();
-        const renpy_path = path_1.default.join(dir, 'renpy.sh');
-        if (fs_1.default.existsSync(renpy_path)) {
-            return renpy_path;
-        }
-        else {
-            throw Error("Failed to find Ren'Py executable in Ren'Py directory.");
-        }
     }
     installDlc(dlc) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -14981,7 +15139,7 @@ class RenpyInstaller {
             const dlc_info = this.meta[dlc];
             // Get metadata
             const json_url = `${this.base_url}/${dlc_info.json_url}`;
-            core.debug(`Load update metadata for ${dlc} from ${json_url}.`);
+            logger.debug(`Load update metadata for ${dlc} from ${json_url}.`);
             const dlc_content = (yield this.http.getJson(json_url)).result;
             if (!dlc_content || !dlc_content[dlc]) {
                 throw Error(`Failed to read dlc update file for (${dlc}).`);
@@ -14989,17 +15147,15 @@ class RenpyInstaller {
             // Download & extract files
             const gz_name = path_1.default.basename(dlc_info.json_url, '.json');
             const gz_url = `${this.base_url}/${gz_name}.gz`;
-            core.debug(`Download from ${gz_url}.`);
+            logger.debug(`Download from ${gz_url}.`);
             const gz_file = yield tc.downloadTool(gz_url);
-            core.debug(`Extracting downloaded dlc file.`);
-            const out_dir = this.getEffectiveDir();
+            logger.debug(`Extracting downloaded dlc file.`);
             const file_list = this.buildDlcFilelist(dlc_content[dlc]);
             tar.x({
-                cwd: out_dir,
+                cwd: this.install_dir,
                 file: gz_file,
                 sync: true
             }, file_list);
-            //core.debug(`Update current index.`);
             // TODO: extract update/current.json content and call updateCurrentJson
         });
     }
@@ -15014,8 +15170,7 @@ class RenpyInstaller {
         return filelist;
     }
     updateCurrentJson(update) {
-        const base_dir = this.getEffectiveDir();
-        const update_file = path_1.default.join(base_dir, 'update', 'current.json');
+        const update_file = path_1.default.join(this.install_dir, 'update', 'current.json');
         const content = JSON.parse(fs_1.default.readFileSync(update_file, 'utf-8'));
         for (const k in update) {
             content[k] = update[k];
@@ -15024,6 +15179,118 @@ class RenpyInstaller {
     }
 }
 exports.RenpyInstaller = RenpyInstaller;
+
+
+/***/ }),
+
+/***/ 8672:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fail = exports.getLogger = exports.writeOutputs = exports.parseInputs = void 0;
+const os_1 = __importDefault(__nccwpck_require__(2037));
+const path_1 = __importDefault(__nccwpck_require__(1017));
+const core = __importStar(__nccwpck_require__(2186));
+const utils_1 = __nccwpck_require__(1314);
+function parseInputs() {
+    const logger = getLogger();
+    const version = core.getInput('version');
+    let install_dir = core.getInput('install_dir');
+    const opts = {
+        action: core.getInput('action'),
+        game_dir: core.getInput('game') || '.',
+        install_dir: install_dir || path_1.default.join(os_1.default.homedir(), '.renpy_exec'),
+        install_opts: {
+            version: core.getInput('version') || '8.0.3',
+            dlc_list: core
+                .getInput('dlc')
+                .split(/,|\s+/)
+                .map(v => v.trim())
+                .filter(s => !!s),
+            live2d_url: core.getInput('live2d'),
+            update_path: (0, utils_1.stringToBool)(core.getInput('update_path'), false)
+        }
+    };
+    logger.debug(`Mapped dlc input "${core.getInput('dlc')}" to ${opts.install_opts.dlc_list}`);
+    switch (opts.action) {
+        case 'install':
+            break;
+        case 'distribute':
+            opts.distribute_opts = {
+                packages: (core.getInput('packages') || 'all')
+                    .split(/,|\n/)
+                    .map(v => v.trim())
+                    .filter(s => !!s)
+                    .map(s => {
+                    const splitted = s.split(/\s+/);
+                    if (splitted.length == 1) {
+                        return s;
+                    }
+                    else {
+                        const pkg_name = splitted[0];
+                        if (pkg_name == 'all') {
+                            throw Error(`Specifying a package file name for the generic 'all' package is not supported (in '${s}').`);
+                        }
+                        const path = s.substring(pkg_name.length).trim();
+                        return [pkg_name, path];
+                    }
+                }),
+                target_dir: core.getInput('out_dir')
+            };
+            break;
+        case 'lint':
+            opts.lint_opts = {};
+            break;
+        default:
+            throw Error(`Invalid action: ${opts.action}`);
+    }
+    return opts;
+}
+exports.parseInputs = parseInputs;
+function writeOutputs(out) {
+    for (const k in out) {
+        if (out[k] !== undefined) {
+            core.setOutput(k, out[k]);
+        }
+    }
+}
+exports.writeOutputs = writeOutputs;
+function getLogger() {
+    return core;
+}
+exports.getLogger = getLogger;
+function fail(message) {
+    core.setFailed(message);
+}
+exports.fail = fail;
 
 
 /***/ }),
@@ -15065,67 +15332,95 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const os_1 = __importDefault(__nccwpck_require__(2037));
-const path_1 = __importDefault(__nccwpck_require__(1017));
-const core = __importStar(__nccwpck_require__(2186));
+const fs = __importStar(__nccwpck_require__(7147));
+const os = __importStar(__nccwpck_require__(2037));
+const executor_1 = __nccwpck_require__(2384);
+const io_1 = __nccwpck_require__(8672);
 const installer_1 = __nccwpck_require__(2574);
+const logger = (0, io_1.getLogger)();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            /* Get inputs */
-            const version = core.getInput('version');
-            let install_dir = core.getInput('install_dir');
-            core.startGroup("Install Ren'Py components");
-            let opts = {
-                version,
-                dlc_list: core
-                    .getInput('dlc')
-                    .split(',')
-                    .map(v => v.trim())
-                    .filter(s => !!s),
-                live2d_url: core.getInput('live2d'),
-                install_dir: install_dir ? install_dir : path_1.default.join(os_1.default.homedir(), '.renpy_exec', version)
+            if (!['win32', 'linux'].includes(os.platform())) {
+                throw Error(`Unsupported platform: ${os.platform()}`);
+            }
+            const opts = (0, io_1.parseInputs)();
+            const executor = new executor_1.RenpyExecutor(opts.install_dir);
+            if (opts.action == 'install' || !fs.existsSync(opts.install_dir)) {
+                logger.startGroup("Install Ren'Py");
+                const installer = new installer_1.RenpyInstaller(opts.install_dir, opts.install_opts.version);
+                yield installer.install(opts.install_opts);
+                logger.endGroup();
+            }
+            const outputs = {
+                install_dir: executor.getDirectory(),
+                python_path: executor.getPythonPath(),
+                renpy_path: executor.getRenpyPath()
             };
-            const installer = new installer_1.RenpyInstaller(opts);
-            yield installer.load();
-            core.info(`Installing Ren'Py version ${version}`);
-            yield installer.installCore();
-            core.endGroup();
-            core.startGroup('Install DLCs');
-            if (opts.dlc_list.length > 0) {
-                for (const dlc of opts.dlc_list) {
-                    core.info(`Installing DLC ${dlc}.`);
-                    installer.installDlc(dlc);
-                }
+            switch (opts.action) {
+                case 'install':
+                    break;
+                case 'distribute':
+                    logger.startGroup('Generate distribution files');
+                    yield executor.distribute(opts.game_dir, opts.distribute_opts);
+                    logger.endGroup();
+                    break;
+                case 'lint':
+                    logger.startGroup('Lint project');
+                    yield executor.lint(opts.game_dir, opts.lint_opts);
+                    logger.endGroup();
+                    break;
+                default:
+                    throw Error(`Unsupported action ${opts.action}`);
             }
-            else {
-                core.info('No DLC to install.');
-            }
-            core.endGroup();
-            core.startGroup('Install Live2D');
-            if (opts.live2d_url) {
-                core.error('Live2D is not supported yet.');
-            }
-            else {
-                core.info('Skip Live2D install');
-            }
-            core.endGroup();
-            core.startGroup('Write action outputs');
-            core.setOutput('install_dir', installer.getEffectiveDir());
-            core.setOutput('python_path', installer.getPythonPath());
-            core.setOutput('renpy_path', installer.getRenpyPath());
-            core.endGroup();
+            logger.info('Write action outputs');
+            (0, io_1.writeOutputs)(outputs);
         }
         catch (error) {
-            core.setFailed(error);
+            (0, io_1.fail)(error);
         }
     });
 }
 main();
+
+
+/***/ }),
+
+/***/ 1314:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickOsValue = exports.stringToBool = void 0;
+const os_1 = __importDefault(__nccwpck_require__(2037));
+function stringToBool(value, default_value) {
+    if (!value) {
+        return default_value;
+    }
+    if (!['true', 'false'].includes(value.toLowerCase())) {
+        throw Error(`Received an arbitrary string where a boolean was expected: ${value}`);
+    }
+    return value.toLowerCase() == 'true';
+}
+exports.stringToBool = stringToBool;
+function pickOsValue(windows, linux, mac) {
+    switch (os_1.default.platform()) {
+        case 'linux':
+            return linux;
+        case 'win32':
+            return windows;
+        case 'darwin':
+            return mac;
+        default:
+            throw Error(`Unsupported platform: ${os_1.default.platform}`);
+    }
+}
+exports.pickOsValue = pickOsValue;
 
 
 /***/ }),

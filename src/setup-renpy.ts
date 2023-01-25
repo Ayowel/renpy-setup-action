@@ -1,45 +1,52 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import { RenpyExecutor } from './executor';
 import { getLogger, parseInputs, writeOutputs, fail } from './io';
 import { RenpyInstaller } from './installer';
+import { RenpyDistributeOptions, RenpyLintOptions, RenpyOutputs } from './models';
 
 const logger = getLogger();
 
 async function main() {
   try {
+    if (!['win32', 'linux'].includes(os.platform())) {
+      throw Error(`Unsupported platform: ${os.platform()}`);
+    }
     const opts = parseInputs();
+    const executor = new RenpyExecutor(opts.install_dir);
 
-    logger.startGroup("Install Ren'Py components");
-    const installer = new RenpyInstaller(opts);
-    await installer.load();
-    logger.info(`Installing Ren'Py version ${opts.version}`);
-    await installer.installCore();
-    logger.endGroup();
-
-    logger.startGroup('Install DLCs');
-    if (opts.dlc_list.length > 0) {
-      for (const dlc of opts.dlc_list) {
-        logger.info(`Installing DLC ${dlc}.`);
-        installer.installDlc(dlc);
-      }
-    } else {
-      logger.info('No DLC to install.');
+    if (opts.action == 'install' || !fs.existsSync(opts.install_dir)) {
+      logger.startGroup("Install Ren'Py");
+      const installer = new RenpyInstaller(opts.install_dir, opts.install_opts.version);
+      await installer.install(opts.install_opts);
+      logger.endGroup();
     }
-    logger.endGroup();
 
-    logger.startGroup('Install Live2D');
-    if (opts.live2d_url) {
-      logger.error('Live2D is not supported yet.');
-    } else {
-      logger.info('Skip Live2D install');
+    const outputs: RenpyOutputs = {
+      install_dir: executor.getDirectory(),
+      python_path: executor.getPythonPath(),
+      renpy_path: executor.getRenpyPath()
+    };
+
+    switch (opts.action) {
+      case 'install':
+        break;
+      case 'distribute':
+        logger.startGroup('Generate distribution files');
+        await executor.distribute(opts.game_dir, opts.distribute_opts as RenpyDistributeOptions);
+        logger.endGroup();
+        break;
+      case 'lint':
+        logger.startGroup('Lint project');
+        await executor.lint(opts.game_dir, opts.lint_opts as RenpyLintOptions);
+        logger.endGroup();
+        break;
+      default:
+        throw Error(`Unsupported action ${opts.action}`);
     }
-    logger.endGroup();
 
-    logger.startGroup('Write action outputs');
-    writeOutputs({
-      install_dir: installer.getEffectiveDir(),
-      python_path: installer.getPythonPath(),
-      renpy_path: installer.getRenpyPath()
-    });
-    logger.endGroup();
+    logger.info('Write action outputs');
+    writeOutputs(outputs);
   } catch (error) {
     fail(error as Error);
   }

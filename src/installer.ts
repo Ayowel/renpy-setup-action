@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
+import * as core from '@actions/core';
 import * as httpm from '@actions/http-client';
 import * as tc from '@actions/tool-cache';
 import * as tar from 'tar';
@@ -16,12 +17,6 @@ import {
 
 const logger = getLogger();
 
-const python_paths = [
-  'lib/py3-linux-x86_64/python',
-  'lib/py2-mac-x86_64/python',
-  'lib/linux-x86_64/python'
-];
-
 export class RenpyInstaller {
   protected http: httpm.HttpClient;
   protected version: string;
@@ -29,15 +24,41 @@ export class RenpyInstaller {
   protected base_url: string;
   protected meta: RenpyRootFile | undefined;
 
-  constructor(options: RenpyInstallerOptions) {
-    this.http = new httpm.HttpClient('ayowel/setup-renpy', undefined, {
+  constructor(directory: string, version: string) {
+    this.http = new httpm.HttpClient('github/ayowel/setup-renpy', undefined, {
       allowRetries: true,
       maxRetries: 3
     });
-    this.version = options.version;
-    this.install_dir = options.install_dir;
+    this.version = version;
+    this.install_dir = directory;
     this.meta = undefined;
     this.base_url = `https://www.renpy.org/dl/${this.version}`;
+  }
+
+  public async install(opts: RenpyInstallerOptions) {
+    await this.load();
+    logger.info(`Installing Ren'Py version ${opts.version}`);
+    await this.installCore();
+    if (opts.dlc_list.length > 0) {
+      logger.info('Install DLCs');
+      for (const dlc of opts.dlc_list) {
+        logger.info(`Installing DLC ${dlc}.`);
+        await this.installDlc(dlc);
+      }
+    } else {
+      logger.debug('No DLC to install.');
+    }
+
+    if (opts.live2d_url) {
+      logger.info('Install Live2D');
+      logger.error('Live2D is not supported yet.');
+    } else {
+      logger.debug('No configured Live2D source');
+    }
+
+    if (opts.update_path) {
+      core.addPath(this.install_dir);
+    }
   }
 
   public async load() {
@@ -70,35 +91,6 @@ export class RenpyInstaller {
     return this.meta;
   }
 
-  public getEffectiveDir(): string {
-    if (fs.existsSync(this.install_dir)) {
-      return this.install_dir;
-    } else {
-      throw Error("Can't get effective directory for Ren'Py as it is not installed yet");
-    }
-  }
-
-  public getPythonPath(): string {
-    const dir = this.getEffectiveDir();
-    for (const p of python_paths) {
-      const candidate_path = path.join(dir, p);
-      if (fs.existsSync(candidate_path)) {
-        return candidate_path;
-      }
-    }
-    throw Error("Failed to find Python executable in Ren'Py directory.");
-  }
-
-  public getRenpyPath(): string {
-    const dir = this.getEffectiveDir();
-    const renpy_path = path.join(dir, 'renpy.sh');
-    if (fs.existsSync(renpy_path)) {
-      return renpy_path;
-    } else {
-      throw Error("Failed to find Ren'Py executable in Ren'Py directory.");
-    }
-  }
-
   public async installDlc(dlc: string) {
     if (!this.meta) {
       throw Error('Missing metadata, ensure that you called `load` after init.');
@@ -123,12 +115,11 @@ export class RenpyInstaller {
     logger.debug(`Download from ${gz_url}.`);
     const gz_file = await tc.downloadTool(gz_url);
     logger.debug(`Extracting downloaded dlc file.`);
-    const out_dir = this.getEffectiveDir();
 
     const file_list = this.buildDlcFilelist(dlc_content[dlc]);
     tar.x(
       {
-        cwd: out_dir,
+        cwd: this.install_dir,
         file: gz_file,
         sync: true
       },
@@ -149,8 +140,7 @@ export class RenpyInstaller {
   }
 
   private updateCurrentJson(update: RenpyDlcUpdateCurrent) {
-    const base_dir = this.getEffectiveDir();
-    const update_file = path.join(base_dir, 'update', 'current.json');
+    const update_file = path.join(this.install_dir, 'update', 'current.json');
     const content = JSON.parse(fs.readFileSync(update_file, 'utf-8')) as RenpyDlcUpdateCurrent;
     for (const k in update) {
       content[k] = update[k];
