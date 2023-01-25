@@ -1,21 +1,40 @@
-name: "Setup Ren'Py Environment"
-description: "Setup Ren'Py"
+name: "Ren'Py setup"
+description: "Install, build, and test Ren'Py games"
 branding:
   color: blue
   icon: aperture
 inputs:
-  dlc:
-    description: "Comma-separated list of dlcs to install"
-    required: false
+  action:
+    description: "What should be done with the action"
+    default: install
   install_dir:
     description: "Where Ren'Py should be installed"
+    required: false
+  # Install action
+  dlc:
+    description: "List of dlcs to install"
     required: false
   live2d:
     description: "Live2D url of the file to install (Live2D won't be installed if this is not set)"
     required: false
+  update_path:
+    description: "Whether the install directory should be added to the PATH"
+    required: false
   version:
     description: "Ren'Py version to install"
-    required: true
+    required: false
+  # All non-install actions
+  game:
+    description: "Path to the game's directory"
+    required: false
+  # Distribute action
+  packages:
+    description: "List of release packages to build"
+    required: false
+  out_dir:
+    description: ""
+    required: false
+  # Lint action has no inputs
 outputs:
   install_dir:
     description: "The directory where Ren'Py is installed"
