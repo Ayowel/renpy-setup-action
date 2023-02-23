@@ -1,6 +1,4 @@
 import os from 'os';
-import path from 'path';
-import tc from '@actions/tool-cache';
 
 export function stringToBool(value: string, default_value: boolean): boolean {
   if (!value) {

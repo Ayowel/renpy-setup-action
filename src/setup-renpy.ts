@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as os from 'os';
-import { RenpyExecutor } from './executor';
-import { getLogger, parseInputs, writeOutputs, fail } from './io';
-import { RenpyInstaller } from './installer';
-import { RenpyDistributeOptions, RenpyLintOptions, RenpyOutputs } from './models';
+import { RenpyExecutor } from './controller/executor';
+import { getLogger, parseInputs, writeOutputs, fail } from './adapter/parameters';
+import { RenpyInstaller } from './controller/installer';
+import { RenpyDistributeOptions, RenpyLintOptions, RenpyOutputs } from './model/parameters';
 
 const logger = getLogger();
 
