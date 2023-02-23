@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/github/license/Ayowel/renpy-setup-action)](https://github.com/Ayowel/renpy-setup-action/blob/master/LICENSE)
 [![Latest version](https://img.shields.io/github/v/tag/Ayowel/renpy-setup-action)](https://www.github.com/Ayowel/renpy-setup-action/releases/latest)
+[![Coverage](https://img.shields.io/codecov/c/github/Ayowel/renpy-setup-action)](https://codecov.io/github/Ayowel/renpy-setup-action/)
 
 This action installs Ren'Py with DLCs and modules and allows you to perform simple actions on your code with it.
 
