@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 
-import { getCache, createTmpDir, initContext } from './helpers/test_helpers.test';
-import { RenpyInstaller } from '../src/installer';
-import { RenpyInstallerOptions } from '../src/models';
+import { getCache, createTmpDir, initContext } from '../helpers/test_helpers.test';
+import { RenpyInstaller } from '../../src/controller/installer';
+import { RenpyInstallerOptions } from '../../src/model/parameters';
 
 jest.mock('@actions/core');
 

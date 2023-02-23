@@ -6,14 +6,14 @@ import * as httpm from '@actions/http-client';
 import * as tc from '@actions/tool-cache';
 import * as tar from 'tar';
 
-import { getLogger } from './io';
-import { RenpyInstallerOptions } from './models';
+import { getLogger } from '../adapter/parameters';
+import { RenpyInstallerOptions } from '../model/parameters';
 import {
   RenpyRootFile,
   RenpyUpdateFile,
   RenpyDlcUpdateInfo,
   RenpyDlcUpdateCurrent
-} from './renpy_models';
+} from '../model/renpy';
 
 const logger = getLogger();
 

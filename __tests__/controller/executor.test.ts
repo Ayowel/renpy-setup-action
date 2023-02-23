@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 
-import { createTmpDir, initContext } from './helpers/test_helpers.test';
-import { RenpyExecutor } from '../src/executor';
-import { RenpyInstaller } from '../src/installer';
-import { RenpyDistributeOptions } from '../src/models';
+import { createTmpDir, initContext } from '../helpers/test_helpers.test';
+import { RenpyExecutor } from '../../src/controller/executor';
+import { RenpyInstaller } from '../../src/controller/installer';
+import { RenpyDistributeOptions } from '../../src/model/parameters';
 
 let readonly_tmp_dir: string;
 let renpy8_dir: string;

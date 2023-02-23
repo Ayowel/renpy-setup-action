@@ -1,6 +1,6 @@
-import * as io from '../src/io';
+import * as io from '../../src/adapter/parameters';
 import * as core from '@actions/core';
-import { RenpyOutputs } from '../src/models';
+import { RenpyOutputs } from '../../src/model/parameters';
 
 jest.mock('@actions/core');
 

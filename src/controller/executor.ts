@@ -1,9 +1,9 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getLogger } from './io';
-import { RenpyDistributeOptions, RenpyLintOptions } from './models';
-import { pickOsValue } from './utils';
+import { getLogger } from '../adapter/parameters';
+import { RenpyDistributeOptions, RenpyLintOptions } from '../model/parameters';
+import { pickOsValue } from '../utils';
 
 const logger = getLogger();
 

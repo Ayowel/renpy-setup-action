@@ -1,8 +1,8 @@
 import os from 'os';
 import path from 'path';
 import * as core from '@actions/core';
-import { RenpyInputs, RenpyOutputs } from './models';
-import { stringToBool } from './utils';
+import { RenpyInputs, RenpyOutputs } from '../model/parameters';
+import { stringToBool } from '../utils';
 
 export function parseInputs(): RenpyInputs {
   const logger = getLogger();
