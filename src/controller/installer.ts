@@ -127,7 +127,7 @@ export class RenpyInstaller {
       },
       file_list
     );
-    // TODO: extract update/current.json content and call updateCurrentJson
+    await this.updateCurrentJson(dlc_content);
   }
 
   private buildDlcFilelist(update: RenpyDlcUpdateInfo): string[] {
@@ -141,12 +141,12 @@ export class RenpyInstaller {
     return filelist;
   }
 
-  private updateCurrentJson(update: RenpyDlcUpdateCurrent) {
+  private async updateCurrentJson(update: RenpyDlcUpdateCurrent) {
     const update_file = path.join(this.install_dir, 'update', 'current.json');
     const content = JSON.parse(fs.readFileSync(update_file, 'utf-8')) as RenpyDlcUpdateCurrent;
     for (const k in update) {
       content[k] = update[k];
     }
-    fs.writeFileSync(update_file, JSON.stringify(content));
+    fs.writeFileSync(update_file, JSON.stringify(content, null, 2));
   }
 }

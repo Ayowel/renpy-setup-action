@@ -4,6 +4,7 @@ import path from 'path';
 import { getCache, createTmpDir, initContext } from '../helpers/test_helpers.test';
 import { RenpyInstaller } from '../../src/controller/installer';
 import { RenpyInstallerOptions } from '../../src/model/parameters';
+import { RenpyDlcUpdateCurrent } from '../../src/model/renpy';
 
 jest.mock('@actions/core');
 
@@ -78,6 +79,18 @@ describe('isDlcInstallWorking', () => {
       const location = renpy_dir;
       for (const filepath of expect_files) {
         expect(fs.existsSync(path.join(location, filepath))).toBeTruthy();
+      }
+      /* Ensure the update file was changed */
+      const current_json_file_path = path.join(renpy_dir, 'update', 'current.json');
+      const current_json_content = JSON.parse(
+        fs.readFileSync(current_json_file_path, 'utf-8')
+      ) as RenpyDlcUpdateCurrent;
+      const current_keys: string[] = [];
+      for (const key in current_json_content) {
+        current_keys.push(key);
+      }
+      for (const dlc of dlcs) {
+        expect(current_keys).toContain(dlc);
       }
     },
     3 * 60 * 1000
