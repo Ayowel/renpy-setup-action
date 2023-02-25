@@ -17,6 +17,13 @@ async function main() {
 
     if (opts.action == 'install' || !fs.existsSync(opts.install_dir)) {
       logger.startGroup("Install Ren'Py");
+      if (opts.action != 'install') {
+        // @deprecated This section will be moved to the switch statement
+        logger.error(
+          "Implicit Ren'Py installation is deprecated and will be removed in a future release.\n" +
+            'Add an `install` action step to your job.'
+        );
+      }
       const installer = new RenpyInstaller(opts.install_dir, opts.install_opts.version);
       await installer.install(opts.install_opts);
       logger.endGroup();

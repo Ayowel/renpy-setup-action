@@ -26,10 +26,15 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: project
-      - uses: Ayowel/renpy-setup-action@v1.0.0
+      - name: Install Ren'Py
+        uses: Ayowel/renpy-setup-action@v1.0.0
+        with:
+          action: install
+          version: 8.0.3
+      - name: Generate game distribution files
+        uses: Ayowel/renpy-setup-action@v1.0.0
         with:
           action: distribute
-          version: 8.0.3
           game: project
           packages: linux, win
           out_dir: target
@@ -41,7 +46,7 @@ Ensure that your code does not have structural issues without even running the g
 
 ```yml
 # .github/workflows/lint.yml
-name: Distribute code
+name: Lint code
 on:
   workflow_dispatch:
 
@@ -53,10 +58,15 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: project
-      - uses: Ayowel/renpy-setup-action@v1.0.0
+      - name: Install Ren'Py
+        uses: Ayowel/renpy-setup-action@v1.0.0
+        with:
+          action: install
+          version: 8.0.3
+      - name: Run Ren'Py linter
+        uses: Ayowel/renpy-setup-action@v1.0.0
         with:
           action: lint
-          version: 8.0.3
           game: project
 ```
 
@@ -76,11 +86,12 @@ jobs:
 
     steps:
       - uses: Ayowel/renpy-setup-action@v1.0.0
+        id: renpy
         with:
           action: install
           version: 8.0.3
-          install_dir: renpy
           dlc: steam
+      - run: ${{ steps.renpy.outputs.renpy_path }} --help
 ```
 
 ## Optimization and tips
@@ -108,20 +119,22 @@ jobs:
         with:
           path: project
       - uses: actions/cache@v3
+        id: cache-renpy
         with:
           path: renpy
           key: ${{ runner.os }}-renpy-${{ env.RENPY_VERSION }}
       - uses: Ayowel/renpy-setup-action@v1.0.0
+        if: steps.cache-renpy.outputs.cache-hit != 'true'
+        with:
+          action: install
+          version: ${{ env.RENPY_VERSION }}
+          install_dir: renpy
+      - uses: Ayowel/renpy-setup-action@v1.0.0
         with:
           action: lint
-          version: ${{ env.RENPY_VERSION }}
           install_dir: renpy
           game: project
 ```
-
-### Use implicit installs
-
-When using a non-install action, if Ren'Py is not installed yet, it will be installed first. When doing so, any install-related input provided will be honored.
 
 ### Provide distribution files paths
 
@@ -146,8 +159,11 @@ jobs:
           path: project
       - uses: Ayowel/renpy-setup-action@v1.0.0
         with:
-          action: distribute
+          action: install
           version: 8.0.3
+      - uses: Ayowel/renpy-setup-action@v1.0.0
+        with:
+          action: distribute
           game: project
           packages: |
             linux linux-target/distrib_linux

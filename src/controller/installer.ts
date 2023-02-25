@@ -80,6 +80,7 @@ export class RenpyInstaller {
     }
 
     logger.info("Downloading Ren'Py archive");
+    // Windows and Mac tar supports zip files
     const core_file_ext = pickOsValue('zip', 'tar.bz2', 'zip');
     const core_url = `${this.base_url}/renpy-${this.version}-sdk.${core_file_ext}`;
     logger.debug(`Download from ${core_url}`);
