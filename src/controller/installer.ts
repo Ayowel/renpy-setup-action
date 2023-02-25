@@ -14,6 +14,7 @@ import {
   RenpyDlcUpdateInfo,
   RenpyDlcUpdateCurrent
 } from '../model/renpy';
+import { pickOsValue } from '../utils';
 
 const logger = getLogger();
 
@@ -79,7 +80,8 @@ export class RenpyInstaller {
     }
 
     logger.info("Downloading Ren'Py archive");
-    const core_url = `${this.base_url}/renpy-${this.version}-sdk.tar.bz2`;
+    const core_file_ext = pickOsValue('zip', 'tar.bz2', 'zip');
+    const core_url = `${this.base_url}/renpy-${this.version}-sdk.${core_file_ext}`;
     logger.debug(`Download from ${core_url}`);
     const core_archive = await tc.downloadTool(core_url);
     logger.debug(`Start extraction of Ren'Py archive ${core_archive}`);

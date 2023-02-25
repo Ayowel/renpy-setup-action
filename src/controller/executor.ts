@@ -9,7 +9,7 @@ const logger = getLogger();
 
 enum RenpyExecutableName {
   Linux = 'renpy.sh',
-  Mac = 'renpy.dmg',
+  Mac = 'renpy.sh',
   Windows = 'renpy.exe'
 }
 
