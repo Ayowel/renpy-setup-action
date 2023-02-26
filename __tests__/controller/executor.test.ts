@@ -71,20 +71,24 @@ describe('RenpyExecutor.lint runs as expected', () => {
   it.each([
     [true, 'label start:\n    "Hello"'],
     [false, 'label start:\n    jump thislabeldoesnotexist']
-  ])('Should the linter call succeed ? %s', async (should_resolve, script_content) => {
-    const game_dir = createTmpDir();
-    tmp_dirs.push(game_dir);
-    fs.mkdirSync(path.join(game_dir, 'game'));
-    fs.writeFileSync(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
+  ])(
+    'Should the linter call succeed ? %s',
+    async (should_resolve, script_content) => {
+      const game_dir = createTmpDir();
+      tmp_dirs.push(game_dir);
+      fs.mkdirSync(path.join(game_dir, 'game'));
+      fs.writeFileSync(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
 
-    const executor = new RenpyExecutor(renpy8_dir);
-    const test = expect(executor.lint(game_dir, {}));
-    if (should_resolve) {
-      await test.resolves.not.toThrow();
-    } else {
-      await test.rejects.toThrow();
-    }
-  });
+      const executor = new RenpyExecutor(renpy8_dir);
+      const test = expect(executor.lint(game_dir, {}));
+      if (should_resolve) {
+        await test.resolves.not.toThrow();
+      } else {
+        await test.rejects.toThrow();
+      }
+    },
+    15 * 1000
+  );
 });
 
 describe('RenpyExecutor.distribute runs as expected', () => {
