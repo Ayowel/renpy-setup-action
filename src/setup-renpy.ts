@@ -30,9 +30,9 @@ async function main() {
     }
 
     const outputs: RenpyOutputs = {
-      install_dir: executor.getDirectory(),
-      python_path: executor.getPythonPath(),
-      renpy_path: executor.getRenpyPath()
+      install_dir: fs.realpathSync(executor.getDirectory()),
+      python_path: fs.realpathSync(executor.getPythonPath()),
+      renpy_path: fs.realpathSync(executor.getRenpyPath())
     };
 
     switch (opts.action) {
