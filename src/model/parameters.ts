@@ -1,11 +1,36 @@
-export interface RenpyInputs {
-  action: string;
+interface RenpyInputsCore {
+  //action: string;
   install_dir: string;
   game_dir: string;
   install_opts: RenpyInstallerOptions;
-  distribute_opts?: RenpyDistributeOptions;
-  lint_opts?: RenpyLintOptions;
 }
+
+export enum RenPyInputsSupportedAction {
+  Distribute = 'distribute',
+  Install = 'install',
+  Lint = 'lint'
+}
+
+interface RenpyInputsDistributeCore extends RenpyInputsCore {
+  action: RenPyInputsSupportedAction.Distribute;
+  distribute_opts: RenpyDistributeOptions;
+}
+interface RenpyInputsInstallCore extends RenpyInputsCore {
+  action: RenPyInputsSupportedAction.Install;
+}
+interface RenpyInputsLintCore extends RenpyInputsCore {
+  action: RenPyInputsSupportedAction.Lint;
+  lint_opts: RenpyLintOptions;
+}
+interface RenpyInputsOthCore extends RenpyInputsCore {
+  action: undefined;
+}
+
+export type RenpyInputs =
+  | RenpyInputsDistributeCore
+  | RenpyInputsInstallCore
+  | RenpyInputsLintCore
+  | RenpyInputsOthCore;
 
 export interface RenpyInstallerOptions {
   version: string;
