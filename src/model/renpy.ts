@@ -27,3 +27,27 @@ export type RenpyUpdateFile = {
 export type RenpyDlcUpdateCurrent = {
   [id: string]: any;
 };
+
+export type RenpyAndroidProperties = {
+  [id: string]: string;
+};
+
+export function androidPropertiesToString(props: RenpyAndroidProperties): string {
+  return Object.keys(props)
+    .sort()
+    .map(k => `${k}=${props[k]}`)
+    .join('\n');
+}
+
+export function stringToAndroidProperties(str: string): RenpyAndroidProperties {
+  return str
+    .split('\n')
+    .map(s => s.trim().split('='))
+    .filter(s => s.length >= 2) // Remove all empty/blank lines
+    .reduce((p, s) => {
+      const key = s.splice(0, 1)[0].trim();
+      const value = s.join('=').trim();
+      p[key] = value;
+      return p;
+    }, {} as RenpyAndroidProperties);
+}

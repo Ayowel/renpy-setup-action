@@ -10,19 +10,19 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test('io.test calls core.setFailed', () => {
+test('fail calls core.setFailed', () => {
   const error_message = 'Test error message';
   io.fail(error_message);
   expect(core.setFailed).toHaveBeenCalledWith(error_message);
 });
 
-test('io.getLogger provides a logger that writes to @actions/core', () => {
+test('getLogger provides a logger that writes to @actions/core', () => {
   const log_message = 'Test info message';
   io.getLogger().info(log_message);
   expect(core.info).toHaveBeenCalledWith(log_message);
 });
 
-test('io.writeOutputs uses @actions/core', () => {
+test('writeOutputs uses @actions/core', () => {
   const outputs: RenpyOutputs = {
     install_dir: 'renpy/path',
     renpy_path: 'renpy/path/renpy.sh',
@@ -34,7 +34,7 @@ test('io.writeOutputs uses @actions/core', () => {
   expect(core.setOutput).toHaveBeenCalledWith('python_path', outputs.python_path);
 });
 
-describe('io.parseInputs properly handle input values', () => {
+describe('parseInputs properly handle input values', () => {
   let input: { [k: string]: string } = {};
   beforeEach(() => {
     input = {
@@ -42,6 +42,14 @@ describe('io.parseInputs properly handle input values', () => {
     };
     const spyCoreGetInput = jest.spyOn(core, 'getInput');
     spyCoreGetInput.mockImplementation(key => input[key] || '');
+    const spyCoreGetMultilineInput = jest.spyOn(core, 'getMultilineInput');
+    spyCoreGetMultilineInput.mockImplementation(key => {
+      if (input[key]) {
+        return input[key].split('\n');
+      } else {
+        return [];
+      }
+    });
   });
 
   test('Unknown actions throw an error', () => {

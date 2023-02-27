@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import * as os from 'os';
 import { RenpyExecutor } from './controller/executor';
 import { getLogger, parseInputs, writeOutputs, fail } from './adapter/parameters';
@@ -15,6 +16,18 @@ async function main() {
     }
     const opts = parseInputs();
     const executor = new RenpyExecutor(opts.install_dir);
+
+    if (opts.java_home) {
+      /*
+        Update environment to ensure child processes have
+        the right configuration when commands should rely
+        on android
+      */
+      process.env['JAVA_HOME'] = opts.java_home;
+      process.env['PATH'] = `${path.join(opts.java_home, 'bin')}${path.delimiter}${
+        process.env['PATH']
+      }`;
+    }
 
     if (opts.action == RenPyInputsSupportedAction.Install || !fs.existsSync(opts.install_dir)) {
       logger.startGroup("Install Ren'Py");

@@ -1,7 +1,9 @@
+import { RenpyAndroidProperties } from './renpy';
+
 interface RenpyInputsCore {
-  //action: string;
   install_dir: string;
   game_dir: string;
+  java_home: string;
   install_opts: RenpyInstallerOptions;
 }
 
@@ -37,6 +39,11 @@ export interface RenpyInstallerOptions {
   dlc_list: string[];
   live2d_url: string;
   update_path: boolean;
+  android_aab_properties: RenpyAndroidProperties;
+  android_apk_properties: RenpyAndroidProperties;
+  android_sdk: boolean;
+  android_sdk_owner: string;
+  android_sdk_install_input: string;
 }
 
 export interface RenpyDistributeOptions {
