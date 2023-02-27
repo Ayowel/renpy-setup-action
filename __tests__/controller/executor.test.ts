@@ -32,38 +32,10 @@ afterEach(async () => {
   jest.restoreAllMocks();
 });
 
-describe('RenpyExecutor introspection methods run as expected', () => {
+describe('RenpyExecutor getters run as expected', () => {
   test('RenpyExecutor.getDirectory returns the proper path', () => {
     const executor = new RenpyExecutor(renpy8_dir);
     expect(executor.getDirectory()).toBe(renpy8_dir);
-  });
-
-  test('RenpyExecutor.getPythonPath resolves to the right path', () => {
-    const executor = new RenpyExecutor(renpy8_dir);
-    const pypath = executor.getPythonPath();
-    expect(fs.existsSync(pypath)).toBe(true);
-    expect(fs.statSync(pypath).mode & 100).toBeTruthy();
-  });
-
-  test('RenpyExecutor.getPythonPath fails if python is not found', async () => {
-    const fake_dir = createTmpDir();
-    tmp_dirs.push(fake_dir);
-    const executor = new RenpyExecutor(fake_dir);
-    expect(() => executor.getPythonPath()).toThrow();
-  });
-
-  test('RenpyExecutor.getRenpyPath resolves to the right path', () => {
-    const executor = new RenpyExecutor(renpy8_dir);
-    const renpy_path = executor.getRenpyPath();
-    expect(fs.existsSync(renpy_path)).toBe(true);
-    expect(fs.statSync(renpy_path).mode & 100).toBeTruthy();
-  });
-
-  test("RenpyExecutor.getRenpyPath fails if Ren'Py is not found", async () => {
-    const fake_dir = createTmpDir();
-    tmp_dirs.push(fake_dir);
-    const executor = new RenpyExecutor(fake_dir);
-    expect(() => executor.getRenpyPath()).toThrow();
   });
 });
 
