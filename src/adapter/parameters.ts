@@ -1,7 +1,7 @@
 import os from 'os';
 import path from 'path';
 import * as core from '@actions/core';
-import { RenpyInputs, RenpyOutputs } from '../model/parameters';
+import { RenpyInputs, RenPyInputsSupportedAction, RenpyOutputs } from '../model/parameters';
 import { stringToBool } from '../utils';
 
 export function parseInputs(): RenpyInputs {
@@ -9,8 +9,8 @@ export function parseInputs(): RenpyInputs {
   const version = core.getInput('version');
   let install_dir = core.getInput('install_dir');
 
-  const opts: RenpyInputs = {
-    action: core.getInput('action'),
+  let opts: RenpyInputs = {
+    action: undefined,
     game_dir: core.getInput('game') || '.',
     install_dir: install_dir || path.join(os.homedir(), '.renpy_exec'),
     install_opts: {
@@ -25,38 +25,51 @@ export function parseInputs(): RenpyInputs {
     }
   };
   logger.debug(`Mapped dlc input "${core.getInput('dlc')}" to ${opts.install_opts.dlc_list}`);
-  switch (opts.action) {
-    case 'install':
-      break;
-    case 'distribute':
-      opts.distribute_opts = {
-        packages: (core.getInput('packages') || 'all')
-          .split(/,|\n/)
-          .map(v => v.trim())
-          .filter(s => !!s)
-          .map(s => {
-            const splitted = s.split(/\s+/);
-            if (splitted.length == 1) {
-              return s;
-            } else {
-              const pkg_name = splitted[0];
-              if (pkg_name == 'all') {
-                throw Error(
-                  `Specifying a package file name for the generic 'all' package is not supported (in '${s}').`
-                );
-              }
-              const path = s.substring(pkg_name.length).trim();
-              return [pkg_name, path];
-            }
-          }),
-        target_dir: core.getInput('out_dir')
+  const action = core.getInput('action');
+  switch (action) {
+    case RenPyInputsSupportedAction.Install:
+      opts = {
+        ...opts,
+        action
       };
       break;
-    case 'lint':
-      opts.lint_opts = {};
+    case RenPyInputsSupportedAction.Distribute:
+      opts = {
+        ...opts,
+        action,
+        distribute_opts: {
+          packages: (core.getInput('packages') || 'all')
+            .split(/,|\n/)
+            .map(v => v.trim())
+            .filter(s => !!s)
+            .map(s => {
+              const splitted = s.split(/\s+/);
+              if (splitted.length == 1) {
+                return s;
+              } else {
+                const pkg_name = splitted[0];
+                if (pkg_name == 'all') {
+                  throw Error(
+                    `Specifying a package file name for the generic 'all' package is not supported (in '${s}').`
+                  );
+                }
+                const path = s.substring(pkg_name.length).trim();
+                return [pkg_name, path];
+              }
+            }),
+          target_dir: core.getInput('out_dir')
+        }
+      };
+      break;
+    case RenPyInputsSupportedAction.Lint:
+      opts = {
+        ...opts,
+        action,
+        lint_opts: {}
+      };
       break;
     default:
-      throw Error(`Invalid action: ${opts.action}`);
+      throw Error(`Invalid action: ${(opts as unknown as { action: string }).action}`);
   }
   return opts;
 }

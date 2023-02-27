@@ -1,6 +1,6 @@
 import * as io from '../../src/adapter/parameters';
 import * as core from '@actions/core';
-import { RenpyOutputs } from '../../src/model/parameters';
+import { RenPyInputsSupportedAction, RenpyOutputs } from '../../src/model/parameters';
 
 jest.mock('@actions/core');
 
@@ -38,7 +38,7 @@ describe('io.parseInputs properly handle input values', () => {
   let input: { [k: string]: string } = {};
   beforeEach(() => {
     input = {
-      action: 'install' // default value
+      action: RenPyInputsSupportedAction.Install // default value
     };
     const spyCoreGetInput = jest.spyOn(core, 'getInput');
     spyCoreGetInput.mockImplementation(key => input[key] || '');
@@ -57,7 +57,7 @@ describe('io.parseInputs properly handle input values', () => {
   ])('Dlc install list is properly parsed: "%s"', (input_dlc, expected) => {
     input['dlc'] = input_dlc;
     const opts = io.parseInputs();
-    expect(opts.action).toBe('install');
+    expect(opts.action).toBe(RenPyInputsSupportedAction.Install);
     expect(opts.install_opts.dlc_list).toEqual(expected);
   });
 
@@ -69,22 +69,24 @@ describe('io.parseInputs properly handle input values', () => {
     ['win path/to/win\nmac', [['win', 'path/to/win'], 'mac']],
     [' win, mac   path/to/mac  \n linux ', ['win', ['mac', 'path/to/mac'], 'linux']]
   ])('Package distribution list is properly parsed: "%s"', (input_pkg, expected) => {
-    input['action'] = 'distribute';
+    input['action'] = RenPyInputsSupportedAction.Distribute;
     input['packages'] = input_pkg;
     const opts = io.parseInputs();
-    expect(opts.action).toBe('distribute');
-    expect(opts.distribute_opts?.packages).toEqual(expected);
+    expect(opts.action).toBe(RenPyInputsSupportedAction.Distribute);
+    if (opts.action === RenPyInputsSupportedAction.Distribute) {
+      expect(opts.distribute_opts.packages).toEqual(expected);
+    }
   });
 
   test('Mapping the "all" package to a file path throws an error', () => {
-    input['action'] = 'distribute';
+    input['action'] = RenPyInputsSupportedAction.Distribute;
     input['packages'] = 'all path/to/all';
     expect(io.parseInputs).toThrow();
   });
 
   test('Lint action is properly detected', () => {
-    input['action'] = 'lint';
+    input['action'] = RenPyInputsSupportedAction.Lint;
     const opts = io.parseInputs();
-    expect(opts.action).toBe('lint');
+    expect(opts.action).toBe(RenPyInputsSupportedAction.Lint);
   });
 });

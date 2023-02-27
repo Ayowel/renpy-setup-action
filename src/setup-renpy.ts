@@ -3,7 +3,7 @@ import * as os from 'os';
 import { RenpyExecutor } from './controller/executor';
 import { getLogger, parseInputs, writeOutputs, fail } from './adapter/parameters';
 import { RenpyInstaller } from './controller/installer';
-import { RenpyDistributeOptions, RenpyLintOptions, RenpyOutputs } from './model/parameters';
+import { RenPyInputsSupportedAction, RenpyOutputs } from './model/parameters';
 
 const logger = getLogger();
 
@@ -15,9 +15,9 @@ async function main() {
     const opts = parseInputs();
     const executor = new RenpyExecutor(opts.install_dir);
 
-    if (opts.action == 'install' || !fs.existsSync(opts.install_dir)) {
+    if (opts.action == RenPyInputsSupportedAction.Install || !fs.existsSync(opts.install_dir)) {
       logger.startGroup("Install Ren'Py");
-      if (opts.action != 'install') {
+      if (opts.action != RenPyInputsSupportedAction.Install) {
         // @deprecated This section will be moved to the switch statement
         logger.error(
           "Implicit Ren'Py installation is deprecated and will be removed in a future release.\n" +
@@ -36,16 +36,16 @@ async function main() {
     };
 
     switch (opts.action) {
-      case 'install':
+      case RenPyInputsSupportedAction.Install:
         break;
-      case 'distribute':
+      case RenPyInputsSupportedAction.Distribute:
         logger.startGroup('Generate distribution files');
-        await executor.distribute(opts.game_dir, opts.distribute_opts as RenpyDistributeOptions);
+        await executor.distribute(opts.game_dir, opts.distribute_opts);
         logger.endGroup();
         break;
-      case 'lint':
+      case RenPyInputsSupportedAction.Lint:
         logger.startGroup('Lint project');
-        await executor.lint(opts.game_dir, opts.lint_opts as RenpyLintOptions);
+        await executor.lint(opts.game_dir, opts.lint_opts);
         logger.endGroup();
         break;
       default:
