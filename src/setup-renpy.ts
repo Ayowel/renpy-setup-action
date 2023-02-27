@@ -4,6 +4,7 @@ import { RenpyExecutor } from './controller/executor';
 import { getLogger, parseInputs, writeOutputs, fail } from './adapter/parameters';
 import { RenpyInstaller } from './controller/installer';
 import { RenPyInputsSupportedAction, RenpyOutputs } from './model/parameters';
+import { getRenpyPythonPath, getRenpyExecPath } from './adapter/system';
 
 const logger = getLogger();
 
@@ -29,10 +30,11 @@ async function main() {
       logger.endGroup();
     }
 
+    const renpy_dir = fs.realpathSync(executor.getDirectory());
     const outputs: RenpyOutputs = {
-      install_dir: fs.realpathSync(executor.getDirectory()),
-      python_path: fs.realpathSync(executor.getPythonPath()),
-      renpy_path: fs.realpathSync(executor.getRenpyPath())
+      install_dir: renpy_dir,
+      python_path: getRenpyPythonPath(renpy_dir),
+      renpy_path: getRenpyExecPath(renpy_dir)
     };
 
     switch (opts.action) {
