@@ -63,6 +63,11 @@ async function main() {
         await executor.lint(opts.game_dir, opts.lint_opts);
         logger.endGroup();
         break;
+      case RenPyInputsSupportedAction.AndroidBuild:
+        logger.startGroup('Build android project files');
+        await executor.android_build(opts.game_dir, opts.android_build_opts);
+        logger.endGroup();
+        break;
       default:
         throw Error(`Unsupported action ${opts.action}`);
     }

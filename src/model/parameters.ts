@@ -8,11 +8,18 @@ interface RenpyInputsCore {
 }
 
 export enum RenPyInputsSupportedAction {
+  AndroidBuild = 'android_build',
   Distribute = 'distribute',
   Install = 'install',
   Lint = 'lint'
 }
 
+/* Full parameter lists */
+
+interface RenpyInputsAndroidBuildCore extends RenpyInputsCore {
+  action: RenPyInputsSupportedAction.AndroidBuild;
+  android_build_opts: RenpyAndroidBuildOptions;
+}
 interface RenpyInputsDistributeCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Distribute;
   distribute_opts: RenpyDistributeOptions;
@@ -29,10 +36,23 @@ interface RenpyInputsOthCore extends RenpyInputsCore {
 }
 
 export type RenpyInputs =
+  | RenpyInputsAndroidBuildCore
   | RenpyInputsDistributeCore
   | RenpyInputsInstallCore
   | RenpyInputsLintCore
   | RenpyInputsOthCore;
+
+/* Action-specific parameters */
+
+export enum RenpyAndroidBuildTypes {
+  PlayBundle = 'aab',
+  UniversalAPK = 'apk'
+}
+
+export interface RenpyAndroidBuildOptions {
+  target_dir: string;
+  build_type: RenpyAndroidBuildTypes;
+}
 
 export interface RenpyInstallerOptions {
   version: string;
@@ -52,6 +72,8 @@ export interface RenpyDistributeOptions {
 }
 
 export interface RenpyLintOptions {}
+
+/* Output values */
 
 export interface RenpyOutputs {
   install_dir: string;

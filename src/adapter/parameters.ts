@@ -1,7 +1,12 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as core from '@actions/core';
-import { RenpyInputs, RenPyInputsSupportedAction, RenpyOutputs } from '../model/parameters';
+import {
+  RenpyAndroidBuildTypes,
+  RenpyInputs,
+  RenPyInputsSupportedAction,
+  RenpyOutputs
+} from '../model/parameters';
 import { stringToBool } from '../utils';
 import { stringToAndroidProperties } from '../model/renpy';
 
@@ -59,6 +64,21 @@ export function parseInputs(): RenpyInputs {
       opts = {
         ...opts,
         action
+      };
+      break;
+    case RenPyInputsSupportedAction.AndroidBuild:
+      const build_type = core.getInput('build_type');
+      const valid_build_types = Object.values(RenpyAndroidBuildTypes);
+      if (!valid_build_types.includes(build_type as RenpyAndroidBuildTypes)) {
+        throw Error(`Invalid build type '${build_type}', expected one of ${valid_build_types}`);
+      }
+      opts = {
+        ...opts,
+        action,
+        android_build_opts: {
+          target_dir: core.getInput('out_dir'),
+          build_type: build_type as RenpyAndroidBuildTypes
+        }
       };
       break;
     case RenPyInputsSupportedAction.Distribute:

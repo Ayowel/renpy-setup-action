@@ -1,6 +1,10 @@
 import * as io from '../../src/adapter/parameters';
 import * as core from '@actions/core';
-import { RenPyInputsSupportedAction, RenpyOutputs } from '../../src/model/parameters';
+import {
+  RenpyAndroidBuildTypes,
+  RenPyInputsSupportedAction,
+  RenpyOutputs
+} from '../../src/model/parameters';
 
 jest.mock('@actions/core');
 
@@ -96,5 +100,21 @@ describe('parseInputs properly handle input values', () => {
     input['action'] = RenPyInputsSupportedAction.Lint;
     const opts = io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Lint);
+  });
+
+  test('Android build action is properly detected', () => {
+    input['action'] = RenPyInputsSupportedAction.AndroidBuild;
+    input['build_type'] = RenpyAndroidBuildTypes.PlayBundle;
+    const opts = io.parseInputs();
+    expect(opts.action).toBe(RenPyInputsSupportedAction.AndroidBuild);
+    if (opts.action == RenPyInputsSupportedAction.AndroidBuild) {
+      expect(opts.android_build_opts.build_type).toBe(RenpyAndroidBuildTypes.PlayBundle);
+    }
+  });
+
+  test('Android build action fails on unknown build type', () => {
+    input['action'] = RenPyInputsSupportedAction.AndroidBuild;
+    input['build_type'] = 'sos';
+    expect(() => io.parseInputs()).toThrow();
   });
 });

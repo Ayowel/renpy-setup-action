@@ -48,10 +48,16 @@ inputs:
   java_home:
     description: "Path to a Java 8 SDK used for android builds and installation"
     required: false
+  # Android build/distribute action
+  build_type:
+    description: "Specifies whether an APK or AAB archive should be built"
+    required: false
+    default: apk
   # Distribute action
   packages:
     description: "List of release packages to build"
     required: false
+  # All distribute-like actions
   out_dir:
     description: ""
     required: false
