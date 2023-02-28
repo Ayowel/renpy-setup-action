@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
+  distribute:
     runs-on: ubuntu-latest
 
     steps:
@@ -70,31 +70,68 @@ jobs:
           game: project
 ```
 
-### Install
+### Build android release
 
 Or simply install Ren'Py to use commands of your choosing.
 
 ```yml
-# .github/workflows/install.yml
-name: Install Ren'Py
+# .github/workflows/android_build.yml
+name: Build android distribution
 on:
   workflow_dispatch:
 
+env:
+  # Required because GitHub-hosted runners provide an incompatible NDK
+  ANDROID_NDK_HOME: ""
+
 jobs:
-  lint:
+  android_build:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v3
+        with:
+          path: project
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt-hotspot'
+          java-version: '8'
+      - name: Create keystore
+        run: base64 -d <<<"$ANDROID_KEYSTORE" >android.keystore
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
       - uses: Ayowel/renpy-setup-action@v1.0.0
-        id: renpy
         with:
           action: install
           version: 8.0.3
-          dlc: steam
-      - run: ${{ steps.renpy.outputs.renpy_path }} --help
+          dlc: rapt
+          android_sdk: true
+          android_properties: |
+            key.alias=android
+            key.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+            key.alias.password=${{ secrets.ANDROID_ALIAS_PASSWORD }}
+            key.store=${{ github.workspace }}/android.keystore
+      # The project must have a .android.json file
+      - uses: Ayowel/renpy-setup-action@v1.0.0
+        with:
+          action: android_build
+          build_type: apk
+          game: project
+          out_dir: target
 ```
 
 ## Optimization and tips
+
+### Android
+
+Android builds require that you have Java 8 installed, ensure that it is in the path or provide the `java_home` input.
+
+Additionally, Ren'Py provides its own [NDK](https://developer.android.com/ndk/), ensure that the runner does not override it by setting `ANDROID_NDK_HOME` to the empty string:
+
+```yml
+env:
+  ANDROID_NDK_HOME: ""
+```
 
 ### Use the cache
 
@@ -189,6 +226,8 @@ This action supports the following inputs:
     install_dir: ~/.renpy_exec
     # Directory of the Ren'Py game
     game: .
+    # Where the Java 8 SDK is located
+    java_home:
 
     ### INSTALL INPUTS ###
     # Comma/space-separated list of Ren'Py DLCs to install
@@ -200,11 +239,28 @@ This action supports the following inputs:
     update_path: false
     # Downloaded Ren'Py version when installing
     version: 8.0.3
+    # Whether to install the Android SDK
+    android_sdk: false
+    # Input for the SDK installation process - this should not be used in most cases
+    android_sdk_install_input:
+    # If android_sdk_install_input is not provided, what company name to use when installing the SDK
+    android_sdk_owner:
+    # Configuration properties to use when building android releases
+    # aab/apk replace the default properties if provided
+    android_properties:
+    android_aab_properties:
+    android_apk_properties:
 
     ### DISTRIBUTE INPUTS ###
     # Comma/newline-separated list of packages that should
     # be built
     packages: all
+    # Directory where generated packages should be saved
+    out_dir: ""
+
+    ### ANDROID_BUILD INPUTS
+    # Whether to build an Universak APK (apk) or a Play Bundle (aab)
+    build_type: apk
     # Directory where generated packages should be saved
     out_dir: ""
 ```
