@@ -1,6 +1,10 @@
 import * as io from '../../src/adapter/parameters';
 import * as core from '@actions/core';
-import { RenPyInputsSupportedAction, RenpyOutputs } from '../../src/model/parameters';
+import {
+  RenpyAndroidBuildTypes,
+  RenPyInputsSupportedAction,
+  RenpyOutputs
+} from '../../src/model/parameters';
 
 jest.mock('@actions/core');
 
@@ -10,19 +14,19 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test('io.test calls core.setFailed', () => {
+test('fail calls core.setFailed', () => {
   const error_message = 'Test error message';
   io.fail(error_message);
   expect(core.setFailed).toHaveBeenCalledWith(error_message);
 });
 
-test('io.getLogger provides a logger that writes to @actions/core', () => {
+test('getLogger provides a logger that writes to @actions/core', () => {
   const log_message = 'Test info message';
   io.getLogger().info(log_message);
   expect(core.info).toHaveBeenCalledWith(log_message);
 });
 
-test('io.writeOutputs uses @actions/core', () => {
+test('writeOutputs uses @actions/core', () => {
   const outputs: RenpyOutputs = {
     install_dir: 'renpy/path',
     renpy_path: 'renpy/path/renpy.sh',
@@ -34,7 +38,7 @@ test('io.writeOutputs uses @actions/core', () => {
   expect(core.setOutput).toHaveBeenCalledWith('python_path', outputs.python_path);
 });
 
-describe('io.parseInputs properly handle input values', () => {
+describe('parseInputs properly handle input values', () => {
   let input: { [k: string]: string } = {};
   beforeEach(() => {
     input = {
@@ -42,6 +46,14 @@ describe('io.parseInputs properly handle input values', () => {
     };
     const spyCoreGetInput = jest.spyOn(core, 'getInput');
     spyCoreGetInput.mockImplementation(key => input[key] || '');
+    const spyCoreGetMultilineInput = jest.spyOn(core, 'getMultilineInput');
+    spyCoreGetMultilineInput.mockImplementation(key => {
+      if (input[key]) {
+        return input[key].split('\n');
+      } else {
+        return [];
+      }
+    });
   });
 
   test('Unknown actions throw an error', () => {
@@ -88,5 +100,21 @@ describe('io.parseInputs properly handle input values', () => {
     input['action'] = RenPyInputsSupportedAction.Lint;
     const opts = io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Lint);
+  });
+
+  test('Android build action is properly detected', () => {
+    input['action'] = RenPyInputsSupportedAction.AndroidBuild;
+    input['build_type'] = RenpyAndroidBuildTypes.PlayBundle;
+    const opts = io.parseInputs();
+    expect(opts.action).toBe(RenPyInputsSupportedAction.AndroidBuild);
+    if (opts.action == RenPyInputsSupportedAction.AndroidBuild) {
+      expect(opts.android_build_opts.build_type).toBe(RenpyAndroidBuildTypes.PlayBundle);
+    }
+  });
+
+  test('Android build action fails on unknown build type', () => {
+    input['action'] = RenPyInputsSupportedAction.AndroidBuild;
+    input['build_type'] = 'sos';
+    expect(() => io.parseInputs()).toThrow();
   });
 });

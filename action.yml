@@ -11,6 +11,24 @@ inputs:
     description: "Where Ren'Py should be installed"
     required: false
   # Install action
+  android_properties:
+    description: Configuration properties to use when building android releases
+    required: false
+  android_aab_properties:
+    description: If provided, overrides android_properties for Android App Bundle releases
+    required: false
+  android_apk_properties:
+    description: If provided, overrides android_properties for Universal APK releases
+    required: false
+  android_sdk:
+    description: "Whether to install the android SDK"
+    required: false
+  android_sdk_owner:
+    description: "If android_sdk_install_input is not provided, the identity to declare when installing the android SDK"
+    required: false
+  android_sdk_install_input:
+    description: "Input for the SDK installation process"
+    required: false
   dlc:
     description: "List of dlcs to install"
     required: false
@@ -27,10 +45,19 @@ inputs:
   game:
     description: "Path to the game's directory"
     required: false
+  java_home:
+    description: "Path to a Java 8 SDK used for android builds and installation"
+    required: false
+  # Android build/distribute action
+  build_type:
+    description: "Specifies whether an APK or AAB archive should be built"
+    required: false
+    default: apk
   # Distribute action
   packages:
     description: "List of release packages to build"
     required: false
+  # All distribute-like actions
   out_dir:
     description: ""
     required: false

@@ -11,6 +11,9 @@ test('noop', () => {
   expect(true).toBe(true);
 });
 
+export const describeIf = (condition: boolean, ...args: Parameters<typeof describe>) =>
+  condition ? describe(...args) : describe.skip(...args);
+
 export function initContext() {
   env.RUNNER_TEMP = getCache();
   const spyTcDownloadTool = jest.spyOn(tc, 'downloadTool');

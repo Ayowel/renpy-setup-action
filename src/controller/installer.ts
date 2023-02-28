@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import * as core from '@actions/core';
 import * as httpm from '@actions/http-client';
@@ -7,12 +7,16 @@ import * as tc from '@actions/tool-cache';
 import * as tar from 'tar';
 
 import { getLogger } from '../adapter/parameters';
+import { renpyPythonExec } from '../adapter/system';
 import { RenpyInstallerOptions } from '../model/parameters';
 import {
   RenpyRootFile,
   RenpyUpdateFile,
   RenpyDlcUpdateInfo,
-  RenpyDlcUpdateCurrent
+  RenpyDlcUpdateCurrent,
+  RenpyAndroidProperties,
+  androidPropertiesToString,
+  stringToAndroidProperties
 } from '../model/renpy';
 import { pickOsValue } from '../utils';
 
@@ -59,6 +63,24 @@ export class RenpyInstaller {
 
     if (opts.update_path) {
       core.addPath(this.install_dir);
+    }
+
+    if (opts.android_sdk) {
+      logger.info('Install Android SDK');
+      const sdk_input =
+        opts.android_sdk_install_input ||
+        `y\ny\n${opts.android_sdk_owner}\ny\ny\n${opts.android_sdk_owner}\ny\n`;
+      await this.installAndroidSdk(sdk_input);
+      logger.info('Configure Android SDK build properties');
+      const project_path = path.join(this.install_dir, 'rapt', 'project');
+      await this.updateKeyValueConfig(
+        path.join(project_path, 'bundle.properties'),
+        opts.android_aab_properties
+      );
+      await this.updateKeyValueConfig(
+        path.join(project_path, 'local.properties'),
+        opts.android_apk_properties
+      );
     }
   }
 
@@ -140,6 +162,29 @@ export class RenpyInstaller {
       filelist.push(...update.files);
     }
     return filelist;
+  }
+
+  public async installAndroidSdk(setupinfo: string) {
+    const args = [
+      '-c',
+      [
+        'import os',
+        'import sys',
+        'sys.path.insert(0, os.path.join(os.getcwd(), "rapt", "buildlib"))',
+        'import rapt.interface',
+        'import rapt.install_sdk',
+        'rapt.install_sdk.install_sdk(rapt.interface.Interface())'
+      ].join('\n')
+    ];
+    await renpyPythonExec(this.install_dir, args, setupinfo);
+  }
+
+  public async updateKeyValueConfig(file: string, pairs: RenpyAndroidProperties) {
+    const content = stringToAndroidProperties(fs.readFileSync(file).toString());
+    for (const k in pairs) {
+      content[k] = pairs[k];
+    }
+    fs.writeFileSync(file, androidPropertiesToString(content));
   }
 
   private async updateCurrentJson(update: RenpyDlcUpdateCurrent) {

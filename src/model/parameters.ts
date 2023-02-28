@@ -1,16 +1,25 @@
+import { RenpyAndroidProperties } from './renpy';
+
 interface RenpyInputsCore {
-  //action: string;
   install_dir: string;
   game_dir: string;
+  java_home: string;
   install_opts: RenpyInstallerOptions;
 }
 
 export enum RenPyInputsSupportedAction {
+  AndroidBuild = 'android_build',
   Distribute = 'distribute',
   Install = 'install',
   Lint = 'lint'
 }
 
+/* Full parameter lists */
+
+interface RenpyInputsAndroidBuildCore extends RenpyInputsCore {
+  action: RenPyInputsSupportedAction.AndroidBuild;
+  android_build_opts: RenpyAndroidBuildOptions;
+}
 interface RenpyInputsDistributeCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Distribute;
   distribute_opts: RenpyDistributeOptions;
@@ -27,16 +36,34 @@ interface RenpyInputsOthCore extends RenpyInputsCore {
 }
 
 export type RenpyInputs =
+  | RenpyInputsAndroidBuildCore
   | RenpyInputsDistributeCore
   | RenpyInputsInstallCore
   | RenpyInputsLintCore
   | RenpyInputsOthCore;
+
+/* Action-specific parameters */
+
+export enum RenpyAndroidBuildTypes {
+  PlayBundle = 'aab',
+  UniversalAPK = 'apk'
+}
+
+export interface RenpyAndroidBuildOptions {
+  target_dir: string;
+  build_type: RenpyAndroidBuildTypes;
+}
 
 export interface RenpyInstallerOptions {
   version: string;
   dlc_list: string[];
   live2d_url: string;
   update_path: boolean;
+  android_aab_properties: RenpyAndroidProperties;
+  android_apk_properties: RenpyAndroidProperties;
+  android_sdk: boolean;
+  android_sdk_owner: string;
+  android_sdk_install_input: string;
 }
 
 export interface RenpyDistributeOptions {
@@ -45,6 +72,8 @@ export interface RenpyDistributeOptions {
 }
 
 export interface RenpyLintOptions {}
+
+/* Output values */
 
 export interface RenpyOutputs {
   install_dir: string;

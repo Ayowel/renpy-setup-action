@@ -2,8 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { getLogger } from '../adapter/parameters';
-import { RenpyDistributeOptions, RenpyLintOptions } from '../model/parameters';
 import { renpyExec } from '../adapter/system';
+import {
+  RenpyAndroidBuildOptions,
+  RenpyAndroidBuildTypes,
+  RenpyDistributeOptions,
+  RenpyLintOptions
+} from '../model/parameters';
 
 const logger = getLogger();
 
@@ -46,6 +51,21 @@ export class RenpyExecutor {
     const [stdout, stderr] = await renpyExec(this.directory, [game, 'lint', '--error-code']);
     logger.info(stdout);
     logger.warning(stderr);
+  }
+
+  public async android_build(game: string, opts: RenpyAndroidBuildOptions) {
+    logger.info(`Building android distribution`);
+    // Prepare command args
+    const args = ['', 'android_build', game];
+    if (opts.target_dir) {
+      args.push('--destination', opts.target_dir);
+    }
+    if (opts.build_type === RenpyAndroidBuildTypes.PlayBundle) {
+      args.push('--bundle');
+    }
+    // Execute command and cleanup
+    await renpyExec(this.directory, args);
+    logger.info('Done');
   }
 
   public getDirectory(): string {
