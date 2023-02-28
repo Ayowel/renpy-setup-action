@@ -27,12 +27,12 @@ jobs:
         with:
           path: project
       - name: Install Ren'Py
-        uses: Ayowel/renpy-setup-action@v1.0.0
+        uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: install
           version: 8.0.3
       - name: Generate game distribution files
-        uses: Ayowel/renpy-setup-action@v1.0.0
+        uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: distribute
           game: project
@@ -59,12 +59,12 @@ jobs:
         with:
           path: project
       - name: Install Ren'Py
-        uses: Ayowel/renpy-setup-action@v1.0.0
+        uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: install
           version: 8.0.3
       - name: Run Ren'Py linter
-        uses: Ayowel/renpy-setup-action@v1.0.0
+        uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: lint
           game: project
@@ -100,7 +100,7 @@ jobs:
         run: base64 -d <<<"$ANDROID_KEYSTORE" >android.keystore
         env:
           ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-      - uses: Ayowel/renpy-setup-action@v1.0.0
+      - uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: install
           version: 8.0.3
@@ -112,7 +112,7 @@ jobs:
             key.alias.password=${{ secrets.ANDROID_ALIAS_PASSWORD }}
             key.store=${{ github.workspace }}/android.keystore
       # The project must have a .android.json file
-      - uses: Ayowel/renpy-setup-action@v1.0.0
+      - uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: android_build
           build_type: apk
@@ -160,13 +160,13 @@ jobs:
         with:
           path: renpy
           key: ${{ runner.os }}-renpy-${{ env.RENPY_VERSION }}
-      - uses: Ayowel/renpy-setup-action@v1.0.0
+      - uses: Ayowel/renpy-setup-action@v1.1.0
         if: steps.cache-renpy.outputs.cache-hit != 'true'
         with:
           action: install
           version: ${{ env.RENPY_VERSION }}
           install_dir: renpy
-      - uses: Ayowel/renpy-setup-action@v1.0.0
+      - uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: lint
           install_dir: renpy
@@ -194,11 +194,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: project
-      - uses: Ayowel/renpy-setup-action@v1.0.0
+      - uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: install
           version: 8.0.3
-      - uses: Ayowel/renpy-setup-action@v1.0.0
+      - uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: distribute
           game: project
@@ -213,7 +213,7 @@ jobs:
 This action supports the following inputs:
 
 ```yml
-- uses: Ayowel/renpy-setup-action@v1.0.0
+- uses: Ayowel/renpy-setup-action@v1.1.0
   with:
     # What the action should do.
     # Must be one of 'install', 'distribute', and 'lint'

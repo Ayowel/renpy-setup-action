@@ -14849,7 +14849,268 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 2384:
+/***/ 1384:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fail = exports.getLogger = exports.writeOutputs = exports.parseInputs = void 0;
+const os_1 = __importDefault(__nccwpck_require__(2037));
+const path_1 = __importDefault(__nccwpck_require__(1017));
+const core = __importStar(__nccwpck_require__(2186));
+const parameters_1 = __nccwpck_require__(1501);
+const utils_1 = __nccwpck_require__(1314);
+function parseInputs() {
+    const logger = getLogger();
+    const version = core.getInput('version');
+    let install_dir = core.getInput('install_dir');
+    let opts = {
+        action: undefined,
+        game_dir: core.getInput('game') || '.',
+        install_dir: install_dir || path_1.default.join(os_1.default.homedir(), '.renpy_exec'),
+        install_opts: {
+            version: core.getInput('version') || '8.0.3',
+            dlc_list: core
+                .getInput('dlc')
+                .split(/,|\s+/)
+                .map(v => v.trim())
+                .filter(s => !!s),
+            live2d_url: core.getInput('live2d'),
+            update_path: (0, utils_1.stringToBool)(core.getInput('update_path'), false)
+        }
+    };
+    logger.debug(`Mapped dlc input "${core.getInput('dlc')}" to ${opts.install_opts.dlc_list}`);
+    const action = core.getInput('action');
+    switch (action) {
+        case parameters_1.RenPyInputsSupportedAction.Install:
+            opts = Object.assign(Object.assign({}, opts), { action });
+            break;
+        case parameters_1.RenPyInputsSupportedAction.Distribute:
+            opts = Object.assign(Object.assign({}, opts), { action, distribute_opts: {
+                    packages: (core.getInput('packages') || 'all')
+                        .split(/,|\n/)
+                        .map(v => v.trim())
+                        .filter(s => !!s)
+                        .map(s => {
+                        const splitted = s.split(/\s+/);
+                        if (splitted.length == 1) {
+                            return s;
+                        }
+                        else {
+                            const pkg_name = splitted[0];
+                            if (pkg_name == 'all') {
+                                throw Error(`Specifying a package file name for the generic 'all' package is not supported (in '${s}').`);
+                            }
+                            const path = s.substring(pkg_name.length).trim();
+                            return [pkg_name, path];
+                        }
+                    }),
+                    target_dir: core.getInput('out_dir')
+                } });
+            break;
+        case parameters_1.RenPyInputsSupportedAction.Lint:
+            opts = Object.assign(Object.assign({}, opts), { action, lint_opts: {} });
+            break;
+        default:
+            throw Error(`Invalid action: ${opts.action}`);
+    }
+    return opts;
+}
+exports.parseInputs = parseInputs;
+function writeOutputs(out) {
+    for (const k in out) {
+        if (out[k] !== undefined) {
+            core.setOutput(k, out[k]);
+        }
+    }
+}
+exports.writeOutputs = writeOutputs;
+function getLogger() {
+    return core;
+}
+exports.getLogger = getLogger;
+function fail(message) {
+    core.setFailed(message);
+}
+exports.fail = fail;
+
+
+/***/ }),
+
+/***/ 7313:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.renpyPythonExec = exports.renpyExec = exports.exec = exports.getRenpyExecPath = exports.getRenpyPythonPath = void 0;
+const cp = __importStar(__nccwpck_require__(2081));
+const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
+const utils_1 = __nccwpck_require__(1314);
+const parameters_1 = __nccwpck_require__(1384);
+const logger = (0, parameters_1.getLogger)();
+var RenpyExecutableName;
+(function (RenpyExecutableName) {
+    RenpyExecutableName["Linux"] = "renpy.sh";
+    RenpyExecutableName["Mac"] = "renpy.sh";
+    RenpyExecutableName["Windows"] = "renpy.exe";
+})(RenpyExecutableName || (RenpyExecutableName = {}));
+function getRenpyPythonPath(directory) {
+    const os = (0, utils_1.pickOsValue)('windows', 'linux', 'mac');
+    const ext = (0, utils_1.pickOsValue)('.exe', '', '');
+    const python_paths = [
+        `lib/py3-${os}-x86_64/python${ext}`,
+        `lib/py2-${os}-x86_64/python${ext}`,
+        `lib/${os}-x86_64/python${ext}`
+    ];
+    for (const p of python_paths) {
+        const candidate_path = path.join(directory, p);
+        if (fs.existsSync(candidate_path)) {
+            return candidate_path;
+        }
+    }
+    throw Error("Failed to find Python executable in Ren'Py directory.");
+}
+exports.getRenpyPythonPath = getRenpyPythonPath;
+function getRenpyExecPath(directory) {
+    const exec_name = (0, utils_1.pickOsValue)(RenpyExecutableName.Windows, RenpyExecutableName.Linux, RenpyExecutableName.Mac);
+    const renpy_path = path.join(directory, exec_name);
+    if (fs.existsSync(renpy_path)) {
+        return renpy_path;
+    }
+    else {
+        throw Error("Failed to find Ren'Py executable in Ren'Py directory.");
+    }
+}
+exports.getRenpyExecPath = getRenpyExecPath;
+function exec(executable, args, opts = {}, stdin = '') {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            let stdout = '';
+            let stderr = '';
+            logger.debug(`Execute command "${executable}" ${args}`);
+            let child;
+            if (typeof args !== 'string') {
+                child = cp.spawn(executable, args, opts);
+            }
+            else {
+                child = cp.exec(`${executable} ${args}`, opts);
+            }
+            if (child.stdin) {
+                child.stdin.end(stdin);
+            }
+            const log = (logger, message) => {
+                const messages = typeof message == 'string' ? message.split('\n') : message;
+                messages.forEach(line => {
+                    logger(`${child.pid} ${line}`);
+                });
+            };
+            if (child.stdout) {
+                child.stdout.on('data', data => {
+                    stdout += data;
+                    log(logger.debug, '' + data);
+                });
+            }
+            if (child.stderr) {
+                child.stderr.on('data', data => {
+                    stderr += data;
+                    log(logger.debug, '' + data);
+                });
+            }
+            child.on('close', status => {
+                if (status == 0) {
+                    resolve([stdout, stderr]);
+                }
+                else {
+                    log(logger.error, [
+                        `Child process ${child.pid} failed with error code ${status}`,
+                        `${stdout}`,
+                        `${stderr}`
+                    ].join('\n\n'));
+                    reject(Error(`${child.pid} Failed to execute command "${executable}" ${args}`));
+                }
+            });
+        });
+    });
+}
+exports.exec = exec;
+function renpyExec(renpy_dir, args) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return exec(getRenpyExecPath(renpy_dir), args);
+    });
+}
+exports.renpyExec = renpyExec;
+function renpyPythonExec(renpy_dir, args, stdin = '') {
+    return __awaiter(this, void 0, void 0, function* () {
+        return exec(fs.realpathSync(getRenpyPythonPath(renpy_dir)), args, { cwd: renpy_dir }, stdin);
+    });
+}
+exports.renpyPythonExec = renpyPythonExec;
+
+
+/***/ }),
+
+/***/ 5582:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -14888,18 +15149,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RenpyExecutor = void 0;
-const cp = __importStar(__nccwpck_require__(2081));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
-const io_1 = __nccwpck_require__(8672);
-const utils_1 = __nccwpck_require__(1314);
-const logger = (0, io_1.getLogger)();
-var RenpyExecutableName;
-(function (RenpyExecutableName) {
-    RenpyExecutableName["Linux"] = "renpy.sh";
-    RenpyExecutableName["Mac"] = "renpy.dmg";
-    RenpyExecutableName["Windows"] = "renpy.exe";
-})(RenpyExecutableName || (RenpyExecutableName = {}));
+const parameters_1 = __nccwpck_require__(1384);
+const system_1 = __nccwpck_require__(7313);
+const logger = (0, parameters_1.getLogger)();
 class RenpyExecutor {
     constructor(directory) {
         this.directory = directory;
@@ -14915,7 +15169,7 @@ class RenpyExecutor {
                     args.push('--destination', opts.target_dir);
                 }
                 logger.info(`Building distributions for ${generic_pkg}`);
-                yield this.execute(args);
+                yield (0, system_1.renpyExec)(this.directory, args);
                 logger.info('Done');
             }
             for (const pkg_info of targeted_pkg) {
@@ -14927,83 +15181,20 @@ class RenpyExecutor {
                     fs.mkdirSync(target_dir, { recursive: true });
                 }
                 logger.info(`Building distribution for ${pkg_info[0]}`);
-                yield this.execute(args);
+                yield (0, system_1.renpyExec)(this.directory, args);
                 logger.info('Done');
             }
         });
     }
     lint(game, opts) {
         return __awaiter(this, void 0, void 0, function* () {
-            const [stdout, stderr] = yield this.execute([game, 'lint', '--error-code']);
+            const [stdout, stderr] = yield (0, system_1.renpyExec)(this.directory, [game, 'lint', '--error-code']);
             logger.info(stdout);
             logger.warning(stderr);
         });
     }
-    execute(args) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => {
-                let stdout = '';
-                let stderr = '';
-                logger.debug(`Execute command "${this.getRenpyPath()}" ${args}`);
-                const child = cp.spawn(this.getRenpyPath(), args);
-                const log = (logger, message) => {
-                    const messages = typeof message == 'string' ? message.split('\n') : message;
-                    messages.forEach(line => {
-                        logger(`${child.pid} ${line}`);
-                    });
-                };
-                child.stdout.on('data', data => {
-                    stdout += data;
-                    log(logger.debug, '' + data);
-                });
-                child.stderr.on('data', data => {
-                    stderr += data;
-                    log(logger.debug, '' + data);
-                });
-                child.on('close', status => {
-                    if (status == 0) {
-                        resolve([stdout, stderr]);
-                    }
-                    else {
-                        log(logger.error, [
-                            `Child process ${child.pid} failed with error code ${status}`,
-                            `${stdout}`,
-                            `${stderr}`
-                        ].join('\n\n'));
-                        reject(Error(`${child.pid} Failed to execute command "${this.getRenpyPath()}" ${args}`));
-                    }
-                });
-            });
-        });
-    }
     getDirectory() {
         return this.directory;
-    }
-    getPythonPath() {
-        const os = (0, utils_1.pickOsValue)('windows', 'linux', 'mac');
-        const ext = (0, utils_1.pickOsValue)('.exe', '', '');
-        const python_paths = [
-            `lib/py3-${os}-x86_64/python${ext}`,
-            `lib/py2-${os}-x86_64/python${ext}`,
-            `lib/${os}-x86_64/python${ext}`
-        ];
-        for (const p of python_paths) {
-            const candidate_path = path.join(this.directory, p);
-            if (fs.existsSync(candidate_path)) {
-                return candidate_path;
-            }
-        }
-        throw Error("Failed to find Python executable in Ren'Py directory.");
-    }
-    getRenpyPath() {
-        const exec_name = (0, utils_1.pickOsValue)(RenpyExecutableName.Windows, RenpyExecutableName.Linux, RenpyExecutableName.Mac);
-        const renpy_path = path.join(this.directory, exec_name);
-        if (fs.existsSync(renpy_path)) {
-            return renpy_path;
-        }
-        else {
-            throw Error("Failed to find Ren'Py executable in Ren'Py directory.");
-        }
     }
 }
 exports.RenpyExecutor = RenpyExecutor;
@@ -15011,7 +15202,7 @@ exports.RenpyExecutor = RenpyExecutor;
 
 /***/ }),
 
-/***/ 2574:
+/***/ 8611:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -15059,8 +15250,9 @@ const core = __importStar(__nccwpck_require__(2186));
 const httpm = __importStar(__nccwpck_require__(6255));
 const tc = __importStar(__nccwpck_require__(7784));
 const tar = __importStar(__nccwpck_require__(4674));
-const io_1 = __nccwpck_require__(8672);
-const logger = (0, io_1.getLogger)();
+const parameters_1 = __nccwpck_require__(1384);
+const utils_1 = __nccwpck_require__(1314);
+const logger = (0, parameters_1.getLogger)();
 class RenpyInstaller {
     constructor(directory, version) {
         this.http = new httpm.HttpClient('github/ayowel/setup-renpy', undefined, {
@@ -15117,7 +15309,9 @@ class RenpyInstaller {
                 throw Error(`The Ren'Py install directory exists before install. This is not supported. (path: ${this.install_dir})`);
             }
             logger.info("Downloading Ren'Py archive");
-            const core_url = `${this.base_url}/renpy-${this.version}-sdk.tar.bz2`;
+            // Windows and Mac tar supports zip files
+            const core_file_ext = (0, utils_1.pickOsValue)('zip', 'tar.bz2', 'zip');
+            const core_url = `${this.base_url}/renpy-${this.version}-sdk.${core_file_ext}`;
             logger.debug(`Download from ${core_url}`);
             const core_archive = yield tc.downloadTool(core_url);
             logger.debug(`Start extraction of Ren'Py archive ${core_archive}`);
@@ -15156,7 +15350,7 @@ class RenpyInstaller {
                 file: gz_file,
                 sync: true
             }, file_list);
-            // TODO: extract update/current.json content and call updateCurrentJson
+            yield this.updateCurrentJson(dlc_content);
         });
     }
     buildDlcFilelist(update) {
@@ -15170,12 +15364,14 @@ class RenpyInstaller {
         return filelist;
     }
     updateCurrentJson(update) {
-        const update_file = path_1.default.join(this.install_dir, 'update', 'current.json');
-        const content = JSON.parse(fs_1.default.readFileSync(update_file, 'utf-8'));
-        for (const k in update) {
-            content[k] = update[k];
-        }
-        fs_1.default.writeFileSync(update_file, JSON.stringify(content));
+        return __awaiter(this, void 0, void 0, function* () {
+            const update_file = path_1.default.join(this.install_dir, 'update', 'current.json');
+            const content = JSON.parse(fs_1.default.readFileSync(update_file, 'utf-8'));
+            for (const k in update) {
+                content[k] = update[k];
+            }
+            fs_1.default.writeFileSync(update_file, JSON.stringify(content, null, 2));
+        });
     }
 }
 exports.RenpyInstaller = RenpyInstaller;
@@ -15183,114 +15379,19 @@ exports.RenpyInstaller = RenpyInstaller;
 
 /***/ }),
 
-/***/ 8672:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ 1501:
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fail = exports.getLogger = exports.writeOutputs = exports.parseInputs = void 0;
-const os_1 = __importDefault(__nccwpck_require__(2037));
-const path_1 = __importDefault(__nccwpck_require__(1017));
-const core = __importStar(__nccwpck_require__(2186));
-const utils_1 = __nccwpck_require__(1314);
-function parseInputs() {
-    const logger = getLogger();
-    const version = core.getInput('version');
-    let install_dir = core.getInput('install_dir');
-    const opts = {
-        action: core.getInput('action'),
-        game_dir: core.getInput('game') || '.',
-        install_dir: install_dir || path_1.default.join(os_1.default.homedir(), '.renpy_exec'),
-        install_opts: {
-            version: core.getInput('version') || '8.0.3',
-            dlc_list: core
-                .getInput('dlc')
-                .split(/,|\s+/)
-                .map(v => v.trim())
-                .filter(s => !!s),
-            live2d_url: core.getInput('live2d'),
-            update_path: (0, utils_1.stringToBool)(core.getInput('update_path'), false)
-        }
-    };
-    logger.debug(`Mapped dlc input "${core.getInput('dlc')}" to ${opts.install_opts.dlc_list}`);
-    switch (opts.action) {
-        case 'install':
-            break;
-        case 'distribute':
-            opts.distribute_opts = {
-                packages: (core.getInput('packages') || 'all')
-                    .split(/,|\n/)
-                    .map(v => v.trim())
-                    .filter(s => !!s)
-                    .map(s => {
-                    const splitted = s.split(/\s+/);
-                    if (splitted.length == 1) {
-                        return s;
-                    }
-                    else {
-                        const pkg_name = splitted[0];
-                        if (pkg_name == 'all') {
-                            throw Error(`Specifying a package file name for the generic 'all' package is not supported (in '${s}').`);
-                        }
-                        const path = s.substring(pkg_name.length).trim();
-                        return [pkg_name, path];
-                    }
-                }),
-                target_dir: core.getInput('out_dir')
-            };
-            break;
-        case 'lint':
-            opts.lint_opts = {};
-            break;
-        default:
-            throw Error(`Invalid action: ${opts.action}`);
-    }
-    return opts;
-}
-exports.parseInputs = parseInputs;
-function writeOutputs(out) {
-    for (const k in out) {
-        if (out[k] !== undefined) {
-            core.setOutput(k, out[k]);
-        }
-    }
-}
-exports.writeOutputs = writeOutputs;
-function getLogger() {
-    return core;
-}
-exports.getLogger = getLogger;
-function fail(message) {
-    core.setFailed(message);
-}
-exports.fail = fail;
+exports.RenPyInputsSupportedAction = void 0;
+var RenPyInputsSupportedAction;
+(function (RenPyInputsSupportedAction) {
+    RenPyInputsSupportedAction["Distribute"] = "distribute";
+    RenPyInputsSupportedAction["Install"] = "install";
+    RenPyInputsSupportedAction["Lint"] = "lint";
+})(RenPyInputsSupportedAction = exports.RenPyInputsSupportedAction || (exports.RenPyInputsSupportedAction = {}));
 
 
 /***/ }),
@@ -15335,38 +15436,46 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const fs = __importStar(__nccwpck_require__(7147));
 const os = __importStar(__nccwpck_require__(2037));
-const executor_1 = __nccwpck_require__(2384);
-const io_1 = __nccwpck_require__(8672);
-const installer_1 = __nccwpck_require__(2574);
-const logger = (0, io_1.getLogger)();
+const executor_1 = __nccwpck_require__(5582);
+const parameters_1 = __nccwpck_require__(1384);
+const installer_1 = __nccwpck_require__(8611);
+const parameters_2 = __nccwpck_require__(1501);
+const system_1 = __nccwpck_require__(7313);
+const logger = (0, parameters_1.getLogger)();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             if (!['win32', 'linux'].includes(os.platform())) {
                 throw Error(`Unsupported platform: ${os.platform()}`);
             }
-            const opts = (0, io_1.parseInputs)();
+            const opts = (0, parameters_1.parseInputs)();
             const executor = new executor_1.RenpyExecutor(opts.install_dir);
-            if (opts.action == 'install' || !fs.existsSync(opts.install_dir)) {
+            if (opts.action == parameters_2.RenPyInputsSupportedAction.Install || !fs.existsSync(opts.install_dir)) {
                 logger.startGroup("Install Ren'Py");
+                if (opts.action != parameters_2.RenPyInputsSupportedAction.Install) {
+                    // @deprecated This section will be moved to the switch statement
+                    logger.error("Implicit Ren'Py installation is deprecated and will be removed in a future release.\n" +
+                        'Add an `install` action step to your job.');
+                }
                 const installer = new installer_1.RenpyInstaller(opts.install_dir, opts.install_opts.version);
                 yield installer.install(opts.install_opts);
                 logger.endGroup();
             }
+            const renpy_dir = fs.realpathSync(executor.getDirectory());
             const outputs = {
-                install_dir: executor.getDirectory(),
-                python_path: executor.getPythonPath(),
-                renpy_path: executor.getRenpyPath()
+                install_dir: renpy_dir,
+                python_path: (0, system_1.getRenpyPythonPath)(renpy_dir),
+                renpy_path: (0, system_1.getRenpyExecPath)(renpy_dir)
             };
             switch (opts.action) {
-                case 'install':
+                case parameters_2.RenPyInputsSupportedAction.Install:
                     break;
-                case 'distribute':
+                case parameters_2.RenPyInputsSupportedAction.Distribute:
                     logger.startGroup('Generate distribution files');
                     yield executor.distribute(opts.game_dir, opts.distribute_opts);
                     logger.endGroup();
                     break;
-                case 'lint':
+                case parameters_2.RenPyInputsSupportedAction.Lint:
                     logger.startGroup('Lint project');
                     yield executor.lint(opts.game_dir, opts.lint_opts);
                     logger.endGroup();
@@ -15375,10 +15484,10 @@ function main() {
                     throw Error(`Unsupported action ${opts.action}`);
             }
             logger.info('Write action outputs');
-            (0, io_1.writeOutputs)(outputs);
+            (0, parameters_1.writeOutputs)(outputs);
         }
         catch (error) {
-            (0, io_1.fail)(error);
+            (0, parameters_1.fail)(error);
         }
     });
 }
