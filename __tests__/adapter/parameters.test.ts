@@ -112,6 +112,16 @@ describe('parseInputs properly handle input values', () => {
     }
   });
 
+  test('Exec action is properly detected', () => {
+    input['action'] = RenPyInputsSupportedAction.Exec;
+    input['run'] = '--help';
+    const opts = io.parseInputs();
+    expect(opts.action).toBe(RenPyInputsSupportedAction.Exec);
+    if (opts.action == RenPyInputsSupportedAction.Exec) {
+      expect(opts.exec_opts.run).toBe('--help');
+    }
+  });
+
   test('Android build action fails on unknown build type', () => {
     input['action'] = RenPyInputsSupportedAction.AndroidBuild;
     input['build_type'] = 'sos';

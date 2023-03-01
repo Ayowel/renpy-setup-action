@@ -59,7 +59,11 @@ inputs:
     required: false
   # All distribute-like actions
   out_dir:
-    description: ""
+    description: "Where the generated files should be saved"
+    required: false
+  # Exec action
+  run:
+    description: "The arguments that should be passed to Ren'Py as a string"
     required: false
   # Lint action has no inputs
 outputs:

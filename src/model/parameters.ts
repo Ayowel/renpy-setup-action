@@ -10,6 +10,7 @@ interface RenpyInputsCore {
 export enum RenPyInputsSupportedAction {
   AndroidBuild = 'android_build',
   Distribute = 'distribute',
+  Exec = 'exec',
   Install = 'install',
   Lint = 'lint'
 }
@@ -23,6 +24,10 @@ interface RenpyInputsAndroidBuildCore extends RenpyInputsCore {
 interface RenpyInputsDistributeCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Distribute;
   distribute_opts: RenpyDistributeOptions;
+}
+interface RenpyInputsExecCore extends RenpyInputsCore {
+  action: RenPyInputsSupportedAction.Exec;
+  exec_opts: RenpyExecOptions;
 }
 interface RenpyInputsInstallCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Install;
@@ -38,6 +43,7 @@ interface RenpyInputsOthCore extends RenpyInputsCore {
 export type RenpyInputs =
   | RenpyInputsAndroidBuildCore
   | RenpyInputsDistributeCore
+  | RenpyInputsExecCore
   | RenpyInputsInstallCore
   | RenpyInputsLintCore
   | RenpyInputsOthCore;
@@ -69,6 +75,10 @@ export interface RenpyInstallerOptions {
 export interface RenpyDistributeOptions {
   packages: (string | [string, string])[];
   target_dir: string;
+}
+
+export interface RenpyExecOptions {
+  run: string;
 }
 
 export interface RenpyLintOptions {}

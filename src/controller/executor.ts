@@ -7,6 +7,7 @@ import {
   RenpyAndroidBuildOptions,
   RenpyAndroidBuildTypes,
   RenpyDistributeOptions,
+  RenpyExecOptions,
   RenpyLintOptions
 } from '../model/parameters';
 
@@ -66,6 +67,11 @@ export class RenpyExecutor {
     // Execute command and cleanup
     await renpyExec(this.directory, args);
     logger.info('Done');
+  }
+
+  public async exec(opts: RenpyExecOptions): Promise<[string, string]> {
+    logger.info(`Running Ren'Py with arguments: ${opts.run}`);
+    return await renpyExec(this.directory, opts.run);
   }
 
   public getDirectory(): string {

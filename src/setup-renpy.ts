@@ -68,6 +68,11 @@ async function main() {
         await executor.android_build(opts.game_dir, opts.android_build_opts);
         logger.endGroup();
         break;
+      case RenPyInputsSupportedAction.Exec:
+        logger.startGroup('Execute command');
+        await executor.exec(opts.exec_opts);
+        logger.endGroup();
+        break;
       default:
         throw Error(`Unsupported action ${opts.action}`);
     }

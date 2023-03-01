@@ -68,6 +68,22 @@ describe('RenpyExecutor.lint runs as expected', () => {
   );
 });
 
+describe('RenpyExecutor.exec runs as expected', () => {
+  test(
+    "Ensure exec does run the Ren'Py executable",
+    async () => {
+      const executor = new RenpyExecutor(renpy8_dir);
+      const test = executor.exec({ run: '"" --help' });
+      let res: [string, string] = ['', ''];
+      await expect(test.then(v => (res = v))).resolves.not.toThrow();
+      expect(res[0]).toMatch(/usage: renpy\.py/);
+      expect(res[0]).toMatch(/The Ren'Py visual novel engine\./);
+      expect(res[1]).toBe('');
+    },
+    15 * 1000
+  );
+});
+
 describe('RenpyExecutor.distribute runs as expected', () => {
   let game_dir: string;
   beforeEach(async () => {

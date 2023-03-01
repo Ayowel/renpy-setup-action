@@ -72,7 +72,7 @@ jobs:
 
 ### Build android release
 
-Or simply install Ren'Py to use commands of your choosing.
+Build your android project
 
 ```yml
 # .github/workflows/android_build.yml
@@ -118,6 +118,36 @@ jobs:
           build_type: apk
           game: project
           out_dir: target
+```
+
+### Execute arbitrary commands
+
+Or simply execute arbitrary commands of your choosing
+
+```yml
+# .github/workflows/help.yml
+name: Get Ren'Py's help message
+on:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: project
+      - name: Install Ren'Py
+        uses: Ayowel/renpy-setup-action@v1.1.0
+        with:
+          action: install
+          version: 8.0.3
+      - name: Print help message
+        uses: Ayowel/renpy-setup-action@v1.1.0
+        with:
+          action: exec
+          run: --help
 ```
 
 ## Optimization and tips
@@ -215,8 +245,9 @@ This action supports the following inputs:
 ```yml
 - uses: Ayowel/renpy-setup-action@v1.1.0
   with:
-    # What the action should do.
-    # Must be one of 'install', 'distribute', and 'lint'
+    # What the action should do. Must be one of:
+    # 'install', 'distribute', 'android_build',
+    # 'lint', and 'exec'
     action: install
     # Directory where Ren'Py is/will be installed.
     # The directory may not exist if the action is install.
@@ -263,6 +294,10 @@ This action supports the following inputs:
     build_type: apk
     # Directory where generated packages should be saved
     out_dir: ""
+
+    ### EXEC INPUTS
+    # The arguments to provide to Ren'Py
+    run: --help
 ```
 
 ## Output
