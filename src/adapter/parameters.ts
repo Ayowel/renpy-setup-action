@@ -109,6 +109,15 @@ export function parseInputs(): RenpyInputs {
         }
       };
       break;
+    case RenPyInputsSupportedAction.Exec:
+      opts = {
+        ...opts,
+        action,
+        exec_opts: {
+          run: core.getInput('run')
+        }
+      };
+      break;
     case RenPyInputsSupportedAction.Lint:
       opts = {
         ...opts,
