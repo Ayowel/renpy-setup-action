@@ -8,45 +8,14 @@ This action installs Ren'Py with DLCs and modules and allows you to perform simp
 
 ## Usage
 
-### Distribute release packages
+### Basic usage
 
-Easily build release packages for multiple platforms.
-
-```yml
-# .github/workflows/distribute.yml
-name: Distribute code
-on:
-  workflow_dispatch:
-
-jobs:
-  distribute:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          path: project
-      - name: Install Ren'Py
-        uses: Ayowel/renpy-setup-action@v1.1.0
-        with:
-          action: install
-          version: 8.0.3
-      - name: Generate game distribution files
-        uses: Ayowel/renpy-setup-action@v1.1.0
-        with:
-          action: distribute
-          game: project
-          packages: linux, win
-          out_dir: target
-```
-
-### Lint project
-
-Ensure that your code does not have structural issues without even running the game.
+Install Ren'Py then execute a commands of your choosing.
+In this example, we use the `exec` action to show Ren'Py's help message after installing:
 
 ```yml
-# .github/workflows/lint.yml
-name: Lint code
+# .github/workflows/help.yml
+name: Get Ren'Py's help message
 on:
   workflow_dispatch:
 
@@ -58,21 +27,88 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: project
+      - uses: actions/cache@v3
+        id: cache-renpy
+        with:
+          path: renpy
+          key: ${{ runner.os }}-renpy
       - name: Install Ren'Py
         uses: Ayowel/renpy-setup-action@v1.1.0
+        if: steps.cache-renpy.outputs.cache-hit != 'true'
         with:
           action: install
+          install_dir: renpy
           version: 8.0.3
-      - name: Run Ren'Py linter
+      # Update/Replace the step below to do something different
+      - name: Print help message
         uses: Ayowel/renpy-setup-action@v1.1.0
         with:
-          action: lint
-          game: project
+          action: exec
+          install_dir: renpy
+          run: --help
+```
+
+### Distribute release packages
+
+After installing, easily build release packages for multiple platforms:
+
+```yml
+- name: Generate game distribution files
+  uses: Ayowel/renpy-setup-action@v1.1.0
+  with:
+    action: distribute
+    install_dir: renpy
+    game: project
+    packages: linux, win
+    out_dir: target
+```
+
+Note that you may specify a file name after the package. If you do, the value of `out_dir` will be ignored for the package. Note however that the generated file will have an extension added to the path and will not match exactly the provided value:
+
+```yml
+- uses: Ayowel/renpy-setup-action@v1.1.0
+  with:
+    action: distribute
+    install_dir: renpy
+    game: project
+    packages: |
+      linux linux-target/distrib_linux
+      win, mac
+    out_dir: target
+```
+### Lint project
+
+After installing Ren'py, ensure that your code does not have structural issues:
+
+```yml
+- name: Run Ren'Py linter
+  uses: Ayowel/renpy-setup-action@v1.1.0
+  with:
+    action: lint
+    install_dir: renpy
+    game: project
+```
+
+### Get layout information
+
+After installing Ren'Py, use the `nothing` action if you just want to get one of the action's outputs, such as the Python installation's path :
+
+```yml
+- uses: Ayowel/renpy-setup-action@v1.1.0
+  id: renpy
+  with:
+    action: nothing
+    install_dir: renpy
+- name: Display Ren'Py's Python version
+  run: ${{ steps.renpy.outputs.python_path }} --version
 ```
 
 ### Build android release
 
-Build your android project
+Install Ren'Py with android support and build your android project.
+
+Android builds require that you have Java 8 installed, install it with `actions/setup-java` or provide the `java_home` path input if the environment variables are not all set-up bu you know where the JDK is located.
+On GitHub-hosted runner, set the environment variable `ANDROID_NDK_HOME` to the empty string to ensure Ren'Py's NDK does not collide with the one provided by GitHub.
 
 ```yml
 # .github/workflows/android_build.yml
@@ -100,9 +136,16 @@ jobs:
         run: base64 -d <<<"$ANDROID_KEYSTORE" >android.keystore
         env:
           ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      - uses: actions/cache@v3
+        id: cache-renpy-android
+        with:
+          path: renpy
+          key: ${{ runner.os }}-renpy
       - uses: Ayowel/renpy-setup-action@v1.1.0
+        if: steps.cache-renpy-android.outputs.cache-hit != 'true'
         with:
           action: install
+          install_dir: renpy
           version: 8.0.3
           dlc: rapt
           android_sdk: true
@@ -115,126 +158,9 @@ jobs:
       - uses: Ayowel/renpy-setup-action@v1.1.0
         with:
           action: android_build
+          install_dir: renpy
           build_type: apk
           game: project
-          out_dir: target
-```
-
-### Execute arbitrary commands
-
-Or simply execute arbitrary commands of your choosing
-
-```yml
-# .github/workflows/help.yml
-name: Get Ren'Py's help message
-on:
-  workflow_dispatch:
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          path: project
-      - name: Install Ren'Py
-        uses: Ayowel/renpy-setup-action@v1.1.0
-        with:
-          action: install
-          version: 8.0.3
-      - name: Print help message
-        uses: Ayowel/renpy-setup-action@v1.1.0
-        with:
-          action: exec
-          run: --help
-```
-
-## Optimization and tips
-
-### Android
-
-Android builds require that you have Java 8 installed, ensure that it is in the path or provide the `java_home` input.
-
-Additionally, Ren'Py provides its own [NDK](https://developer.android.com/ndk/), ensure that the runner does not override it by setting `ANDROID_NDK_HOME` to the empty string:
-
-```yml
-env:
-  ANDROID_NDK_HOME: ""
-```
-
-### Use the cache
-
-You should use the action with caching for best performance. Add the `install_dir` input and cache the corresponding directory with `@actions/cache`.
-
-```yml
-# .github/workflows/lint.yml
-name: Lint code
-
-on:
-  push:
-
-env:
-  RENPY_VERSION: 8.0.3
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          path: project
-      - uses: actions/cache@v3
-        id: cache-renpy
-        with:
-          path: renpy
-          key: ${{ runner.os }}-renpy-${{ env.RENPY_VERSION }}
-      - uses: Ayowel/renpy-setup-action@v1.1.0
-        if: steps.cache-renpy.outputs.cache-hit != 'true'
-        with:
-          action: install
-          version: ${{ env.RENPY_VERSION }}
-          install_dir: renpy
-      - uses: Ayowel/renpy-setup-action@v1.1.0
-        with:
-          action: lint
-          install_dir: renpy
-          game: project
-```
-
-### Provide distribution files paths
-
-The packages list may contain a path for a generated package. When doing so, the  value `out_dir` will be ignored for the files with a path.
-Note that a file extension will automatically be added, so the raw name provided can't be relied upon without gobing the actual file.
-
-In the following example, the linux release will be created in `linux-target/` with a custom name while the windows and mac releases
-
-```yml
-# .github/workflows/distribute.yml
-name: Distribute code
-on:
-  workflow_dispatch:
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          path: project
-      - uses: Ayowel/renpy-setup-action@v1.1.0
-        with:
-          action: install
-          version: 8.0.3
-      - uses: Ayowel/renpy-setup-action@v1.1.0
-        with:
-          action: distribute
-          game: project
-          packages: |
-            linux linux-target/distrib_linux
-            win, mac
           out_dir: target
 ```
 
@@ -247,7 +173,7 @@ This action supports the following inputs:
   with:
     # What the action should do. Must be one of:
     # 'install', 'distribute', 'android_build',
-    # 'lint', and 'exec'
+    # 'lint', 'exec', and 'nothing'
     action: install
     # Directory where Ren'Py is/will be installed.
     # The directory may not exist if the action is install.
