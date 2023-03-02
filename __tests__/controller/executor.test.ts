@@ -68,6 +68,25 @@ describe('RenpyExecutor.lint runs as expected', () => {
   );
 });
 
+describe('RenpyExecutor.translate runs as expected', () => {
+  it.each([[['french', 'english'], 'label start:\n    "Hello"']])(
+    'The translation should generate data for %s',
+    async (languages, script_content) => {
+      const game_dir = createTmpDir();
+      tmp_dirs.push(game_dir);
+      fs.mkdirSync(path.join(game_dir, 'game'));
+      fs.writeFileSync(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
+
+      const executor = new RenpyExecutor(renpy8_dir);
+      await expect(executor.translate(game_dir, { languages })).resolves.not.toThrow();
+      for (const language of languages) {
+        expect(fs.existsSync(path.join(game_dir, 'game', 'tl', language))).toBe(true);
+      }
+    },
+    15 * 1000
+  );
+});
+
 describe('RenpyExecutor.exec runs as expected', () => {
   test(
     "Ensure exec does run the Ren'Py executable",

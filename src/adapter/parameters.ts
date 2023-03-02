@@ -128,8 +128,20 @@ export function parseInputs(): RenpyInputs {
     case RenPyInputsSupportedAction.Nothing:
       opts = { ...opts, action };
       break;
+    case RenPyInputsSupportedAction.Translate:
+      opts = {
+        ...opts,
+        action,
+        translate_opts: {
+          languages: core
+            .getInput('languages')
+            .split(/\s+/)
+            .filter(v => !!v)
+        }
+      };
+      break;
     default:
-      throw Error(`Invalid action: ${(opts as unknown as { action: string }).action}`);
+      throw Error(`Invalid action: ${action}`);
   }
   return opts;
 }

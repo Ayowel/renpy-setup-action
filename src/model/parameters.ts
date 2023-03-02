@@ -13,7 +13,8 @@ export enum RenPyInputsSupportedAction {
   Exec = 'exec',
   Install = 'install',
   Lint = 'lint',
-  Nothing = 'nothing'
+  Nothing = 'nothing',
+  Translate = 'translate'
 }
 
 /* Full parameter lists */
@@ -40,6 +41,10 @@ interface RenpyInputsLintCore extends RenpyInputsCore {
 interface RenpyInputsNothingCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Nothing;
 }
+interface RenpyInputsTranslateCore extends RenpyInputsCore {
+  action: RenPyInputsSupportedAction.Translate;
+  translate_opts: RenpyTranslateOptions;
+}
 interface RenpyInputsOthCore extends RenpyInputsCore {
   action: undefined;
 }
@@ -51,6 +56,7 @@ export type RenpyInputs =
   | RenpyInputsInstallCore
   | RenpyInputsLintCore
   | RenpyInputsNothingCore
+  | RenpyInputsTranslateCore
   | RenpyInputsOthCore;
 
 /* Action-specific parameters */
@@ -87,6 +93,10 @@ export interface RenpyExecOptions {
 }
 
 export interface RenpyLintOptions {}
+
+export interface RenpyTranslateOptions {
+  languages: string[];
+}
 
 /* Output values */
 

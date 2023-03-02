@@ -65,6 +65,11 @@ inputs:
   run:
     description: "The arguments that should be passed to Ren'Py as a string"
     required: false
+  # translate action
+  language:
+    description: "The languages for which translations should be updated"
+    required: false
+    default: None
   # Lint action has no inputs
 outputs:
   install_dir:

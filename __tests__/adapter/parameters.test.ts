@@ -44,10 +44,8 @@ describe('parseInputs properly handle input values', () => {
     input = {
       action: RenPyInputsSupportedAction.Install // default value
     };
-    const spyCoreGetInput = jest.spyOn(core, 'getInput');
-    spyCoreGetInput.mockImplementation(key => input[key] || '');
-    const spyCoreGetMultilineInput = jest.spyOn(core, 'getMultilineInput');
-    spyCoreGetMultilineInput.mockImplementation(key => {
+    jest.spyOn(core, 'getInput').mockImplementation(key => input[key] || '');
+    jest.spyOn(core, 'getMultilineInput').mockImplementation(key => {
       if (input[key]) {
         return input[key].split('\n');
       } else {

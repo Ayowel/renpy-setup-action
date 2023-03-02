@@ -16,8 +16,7 @@ export const describeIf = (condition: boolean, ...args: Parameters<typeof descri
 
 export function initContext() {
   env.RUNNER_TEMP = getCache();
-  const spyTcDownloadTool = jest.spyOn(tc, 'downloadTool');
-  spyTcDownloadTool.mockImplementation(toolCacheDownloadToolMock);
+  jest.spyOn(tc, 'downloadTool').mockImplementation(toolCacheDownloadToolMock);
 }
 
 export function getCache() {

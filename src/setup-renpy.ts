@@ -75,6 +75,11 @@ export async function main() {
         break;
       case RenPyInputsSupportedAction.Nothing:
         break;
+      case RenPyInputsSupportedAction.Translate:
+        logger.startGroup('Translate project');
+        await executor.translate(opts.game_dir, opts.translate_opts);
+        logger.endGroup();
+        break;
       default:
         throw Error(`Unsupported action ${opts.action}`);
     }

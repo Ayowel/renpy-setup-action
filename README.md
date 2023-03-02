@@ -10,7 +10,7 @@ This action installs Ren'Py with DLCs and modules and allows you to perform simp
 
 ### Basic usage
 
-Install Ren'Py then execute a commands of your choosing.
+Install Ren'Py then execute a command of your choosing.
 In this example, we use the `exec` action to show Ren'Py's help message after installing:
 
 ```yml
@@ -87,6 +87,20 @@ After installing Ren'py, ensure that your code does not have structural issues:
     action: lint
     install_dir: renpy
     game: project
+```
+
+### Update the game's translation
+
+After installing Ren'Py, use the `translate` action to update the game's translation files:
+
+```yml
+- uses: Ayowel/renpy-setup-action@v1.1.0
+  id: renpy
+  with:
+    action: translate
+    install_dir: renpy
+    game: project
+    language: french english
 ```
 
 ### Get layout information
@@ -173,7 +187,7 @@ This action supports the following inputs:
   with:
     # What the action should do. Must be one of:
     # 'install', 'distribute', 'android_build',
-    # 'lint', 'exec', and 'nothing'
+    # 'lint', 'exec', 'translate', and 'nothing'
     action: install
     # Directory where Ren'Py is/will be installed.
     # The directory may not exist if the action is install.

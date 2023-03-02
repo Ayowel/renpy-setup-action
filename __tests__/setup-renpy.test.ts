@@ -28,6 +28,7 @@ describe('main properly handles input parameters', () => {
       .spyOn(RenpyExecutor.prototype, 'exec')
       .mockImplementation(() => Promise.resolve(['stdin', 'stdout']));
     jest.spyOn(RenpyExecutor.prototype, 'lint').mockImplementation(() => Promise.resolve());
+    jest.spyOn(RenpyExecutor.prototype, 'translate').mockImplementation(() => Promise.resolve());
     jest.spyOn(RenpyInstaller.prototype, 'install').mockImplementation(() => {
       fs.mkdirSync(path.join(tmpdir, 'renpy'));
       return Promise.resolve();
@@ -70,7 +71,8 @@ describe('main properly handles input parameters', () => {
     ['android_build', RenPyInputsSupportedAction.AndroidBuild],
     ['distribute', RenPyInputsSupportedAction.Distribute],
     ['exec', RenPyInputsSupportedAction.Exec],
-    ['lint', RenPyInputsSupportedAction.Lint]
+    ['lint', RenPyInputsSupportedAction.Lint],
+    ['translate', RenPyInputsSupportedAction.Translate]
   ])('main calls the right RenpyExecutor method when the action is %s', async (method, action) => {
     input['action'] = action;
     input['install_dir'] = tmpdir;
