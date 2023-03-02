@@ -9,9 +9,9 @@ import { getRenpyPythonPath, getRenpyExecPath } from './adapter/system';
 
 const logger = getLogger();
 
-async function main() {
+export async function main() {
   try {
-    if (!['win32', 'linux'].includes(os.platform())) {
+    if (!['darwin', 'win32', 'linux'].includes(os.platform())) {
       throw Error(`Unsupported platform: ${os.platform()}`);
     }
     const opts = parseInputs();
@@ -84,4 +84,4 @@ async function main() {
   }
 }
 
-main();
+if (require.main === module) main();
