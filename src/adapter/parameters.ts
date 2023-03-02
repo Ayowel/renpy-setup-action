@@ -125,6 +125,9 @@ export function parseInputs(): RenpyInputs {
         lint_opts: {}
       };
       break;
+    case RenPyInputsSupportedAction.Nothing:
+      opts = { ...opts, action };
+      break;
     default:
       throw Error(`Invalid action: ${(opts as unknown as { action: string }).action}`);
   }

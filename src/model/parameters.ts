@@ -12,7 +12,8 @@ export enum RenPyInputsSupportedAction {
   Distribute = 'distribute',
   Exec = 'exec',
   Install = 'install',
-  Lint = 'lint'
+  Lint = 'lint',
+  Nothing = 'nothing'
 }
 
 /* Full parameter lists */
@@ -36,6 +37,9 @@ interface RenpyInputsLintCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Lint;
   lint_opts: RenpyLintOptions;
 }
+interface RenpyInputsNothingCore extends RenpyInputsCore {
+  action: RenPyInputsSupportedAction.Nothing;
+}
 interface RenpyInputsOthCore extends RenpyInputsCore {
   action: undefined;
 }
@@ -46,6 +50,7 @@ export type RenpyInputs =
   | RenpyInputsExecCore
   | RenpyInputsInstallCore
   | RenpyInputsLintCore
+  | RenpyInputsNothingCore
   | RenpyInputsOthCore;
 
 /* Action-specific parameters */

@@ -73,6 +73,8 @@ export async function main() {
         await executor.exec(opts.exec_opts);
         logger.endGroup();
         break;
+      case RenPyInputsSupportedAction.Nothing:
+        break;
       default:
         throw Error(`Unsupported action ${opts.action}`);
     }
