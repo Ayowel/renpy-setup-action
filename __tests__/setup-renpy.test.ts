@@ -80,6 +80,17 @@ describe('main properly handles input parameters', () => {
     expect((RenpyExecutor.prototype as { [id: string]: any })[method]).toHaveBeenCalledTimes(1);
   });
 
+  test('main does not call RenpyExecutor methods when the action is nothing', async () => {
+    input['action'] = RenPyInputsSupportedAction.Nothing;
+    input['install_dir'] = tmpdir;
+    input['build_type'] = 'apk';
+    await expect(main()).resolves.not.toThrow();
+    expect(core.setFailed).not.toHaveBeenCalled();
+    ['android_build', 'distribute', 'exec', 'lint'].forEach(m =>
+      expect((RenpyExecutor.prototype as { [id: string]: any })[m]).not.toHaveBeenCalled()
+    );
+  });
+
   test('main calls RenpyInstaller.install when the action is install', async () => {
     input['action'] = RenPyInputsSupportedAction.Install;
     input['install_dir'] = path.join(tmpdir, 'renpy');
