@@ -14877,24 +14877,22 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fail = exports.getLogger = exports.writeOutputs = exports.parseInputs = void 0;
-const os_1 = __importDefault(__nccwpck_require__(2037));
-const path_1 = __importDefault(__nccwpck_require__(1017));
+const os = __importStar(__nccwpck_require__(2037));
+const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const parameters_1 = __nccwpck_require__(1501);
 const utils_1 = __nccwpck_require__(1314);
+const renpy_1 = __nccwpck_require__(8942);
 function parseInputs() {
     const logger = getLogger();
-    const version = core.getInput('version');
     let install_dir = core.getInput('install_dir');
     let opts = {
         action: undefined,
         game_dir: core.getInput('game') || '.',
-        install_dir: install_dir || path_1.default.join(os_1.default.homedir(), '.renpy_exec'),
+        java_home: core.getInput('java_home'),
+        install_dir: install_dir || path.join(os.homedir(), '.renpy_exec'),
         install_opts: {
             version: core.getInput('version') || '8.0.3',
             dlc_list: core
@@ -14903,14 +14901,42 @@ function parseInputs() {
                 .map(v => v.trim())
                 .filter(s => !!s),
             live2d_url: core.getInput('live2d'),
-            update_path: (0, utils_1.stringToBool)(core.getInput('update_path'), false)
+            update_path: (0, utils_1.stringToBool)(core.getInput('update_path'), false),
+            android_sdk: (0, utils_1.stringToBool)(core.getInput('android_sdk'), false),
+            android_sdk_owner: core.getInput('android_sdk_owner'),
+            android_sdk_install_input: core.getInput('android_sdk_install_input'),
+            android_aab_properties: (0, renpy_1.stringToAndroidProperties)(core.getInput('android_aab_properties') || core.getInput('android_properties')),
+            android_apk_properties: (0, renpy_1.stringToAndroidProperties)(core.getInput('android_apk_properties') || core.getInput('android_properties'))
         }
     };
     logger.debug(`Mapped dlc input "${core.getInput('dlc')}" to ${opts.install_opts.dlc_list}`);
+    if (opts.action != 'install') {
+        // Validate install args here
+        const iopts = opts.install_opts;
+        if (iopts.android_sdk && !iopts.dlc_list.includes('rapt')) {
+            logger.warning("The android_sdk will be installed but 'rapt' is not in the dlc list. This is probably a mistake.");
+        }
+        if ((Object.keys(iopts.android_aab_properties).length > 0 ||
+            Object.keys(iopts.android_apk_properties).length > 0) &&
+            iopts.android_sdk == false) {
+            logger.warning('android_properties are provided, but the android_sdk is not set to be installed. This is probably a mistake.');
+        }
+    }
     const action = core.getInput('action');
     switch (action) {
         case parameters_1.RenPyInputsSupportedAction.Install:
             opts = Object.assign(Object.assign({}, opts), { action });
+            break;
+        case parameters_1.RenPyInputsSupportedAction.AndroidBuild:
+            const build_type = core.getInput('build_type');
+            const valid_build_types = Object.values(parameters_1.RenpyAndroidBuildTypes);
+            if (!valid_build_types.includes(build_type)) {
+                throw Error(`Invalid build type '${build_type}', expected one of ${valid_build_types}`);
+            }
+            opts = Object.assign(Object.assign({}, opts), { action, android_build_opts: {
+                    target_dir: core.getInput('out_dir'),
+                    build_type: build_type
+                } });
             break;
         case parameters_1.RenPyInputsSupportedAction.Distribute:
             opts = Object.assign(Object.assign({}, opts), { action, distribute_opts: {
@@ -14935,11 +14961,27 @@ function parseInputs() {
                     target_dir: core.getInput('out_dir')
                 } });
             break;
+        case parameters_1.RenPyInputsSupportedAction.Exec:
+            opts = Object.assign(Object.assign({}, opts), { action, exec_opts: {
+                    run: core.getInput('run')
+                } });
+            break;
         case parameters_1.RenPyInputsSupportedAction.Lint:
             opts = Object.assign(Object.assign({}, opts), { action, lint_opts: {} });
             break;
+        case parameters_1.RenPyInputsSupportedAction.Nothing:
+            opts = Object.assign(Object.assign({}, opts), { action });
+            break;
+        case parameters_1.RenPyInputsSupportedAction.Translate:
+            opts = Object.assign(Object.assign({}, opts), { action, translate_opts: {
+                    languages: core
+                        .getInput('languages')
+                        .split(/\s+/)
+                        .filter(v => !!v)
+                } });
+            break;
         default:
-            throw Error(`Invalid action: ${opts.action}`);
+            throw Error(`Invalid action: ${action}`);
     }
     return opts;
 }
@@ -15153,6 +15195,7 @@ const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const parameters_1 = __nccwpck_require__(1384);
 const system_1 = __nccwpck_require__(7313);
+const parameters_2 = __nccwpck_require__(1501);
 const logger = (0, parameters_1.getLogger)();
 class RenpyExecutor {
     constructor(directory) {
@@ -15191,6 +15234,36 @@ class RenpyExecutor {
             const [stdout, stderr] = yield (0, system_1.renpyExec)(this.directory, [game, 'lint', '--error-code']);
             logger.info(stdout);
             logger.warning(stderr);
+        });
+    }
+    android_build(game, opts) {
+        return __awaiter(this, void 0, void 0, function* () {
+            logger.info(`Building android distribution`);
+            // Prepare command args
+            const args = ['', 'android_build', game];
+            if (opts.target_dir) {
+                args.push('--destination', opts.target_dir);
+            }
+            if (opts.build_type === parameters_2.RenpyAndroidBuildTypes.PlayBundle) {
+                args.push('--bundle');
+            }
+            // Execute command and cleanup
+            yield (0, system_1.renpyExec)(this.directory, args);
+            logger.info('Done');
+        });
+    }
+    exec(opts) {
+        return __awaiter(this, void 0, void 0, function* () {
+            logger.info(`Running Ren'Py with arguments: ${opts.run}`);
+            return yield (0, system_1.renpyExec)(this.directory, opts.run);
+        });
+    }
+    translate(game, opts) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (const language of opts.languages) {
+                logger.info(`Generate translation for language: ${language}`);
+                yield (0, system_1.renpyExec)(this.directory, [game, 'translate', language]);
+            }
         });
     }
     getDirectory() {
@@ -15239,18 +15312,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RenpyInstaller = void 0;
-const fs_1 = __importDefault(__nccwpck_require__(7147));
-const path_1 = __importDefault(__nccwpck_require__(1017));
+const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const httpm = __importStar(__nccwpck_require__(6255));
 const tc = __importStar(__nccwpck_require__(7784));
 const tar = __importStar(__nccwpck_require__(4674));
 const parameters_1 = __nccwpck_require__(1384);
+const system_1 = __nccwpck_require__(7313);
+const renpy_1 = __nccwpck_require__(8942);
 const utils_1 = __nccwpck_require__(1314);
 const logger = (0, parameters_1.getLogger)();
 class RenpyInstaller {
@@ -15289,6 +15361,16 @@ class RenpyInstaller {
             if (opts.update_path) {
                 core.addPath(this.install_dir);
             }
+            if (opts.android_sdk) {
+                logger.info('Install Android SDK');
+                const sdk_input = opts.android_sdk_install_input ||
+                    `y\ny\n${opts.android_sdk_owner}\ny\ny\n${opts.android_sdk_owner}\ny\n`;
+                yield this.installAndroidSdk(sdk_input);
+                logger.info('Configure Android SDK build properties');
+                const project_path = path.join(this.install_dir, 'rapt', 'project');
+                yield this.updateKeyValueConfig(path.join(project_path, 'bundle.properties'), opts.android_aab_properties);
+                yield this.updateKeyValueConfig(path.join(project_path, 'local.properties'), opts.android_apk_properties);
+            }
         });
     }
     load() {
@@ -15305,7 +15387,7 @@ class RenpyInstaller {
     }
     installCore() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (fs_1.default.existsSync(this.install_dir)) {
+            if (fs.existsSync(this.install_dir)) {
                 throw Error(`The Ren'Py install directory exists before install. This is not supported. (path: ${this.install_dir})`);
             }
             logger.info("Downloading Ren'Py archive");
@@ -15315,7 +15397,7 @@ class RenpyInstaller {
             logger.debug(`Download from ${core_url}`);
             const core_archive = yield tc.downloadTool(core_url);
             logger.debug(`Start extraction of Ren'Py archive ${core_archive}`);
-            fs_1.default.mkdirSync(this.install_dir, { recursive: true });
+            fs.mkdirSync(this.install_dir, { recursive: true });
             const out = yield tc.extractTar(core_archive, this.install_dir, ['x', '--strip-components=1']);
         });
     }
@@ -15339,7 +15421,7 @@ class RenpyInstaller {
                 throw Error(`Failed to read dlc update file for (${dlc}).`);
             }
             // Download & extract files
-            const gz_name = path_1.default.basename(dlc_info.json_url, '.json');
+            const gz_name = path.basename(dlc_info.json_url, '.json');
             const gz_url = `${this.base_url}/${gz_name}.gz`;
             logger.debug(`Download from ${gz_url}.`);
             const gz_file = yield tc.downloadTool(gz_url);
@@ -15363,14 +15445,39 @@ class RenpyInstaller {
         }
         return filelist;
     }
+    installAndroidSdk(setupinfo) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = [
+                '-c',
+                [
+                    'import os',
+                    'import sys',
+                    'sys.path.insert(0, os.path.join(os.getcwd(), "rapt", "buildlib"))',
+                    'import rapt.interface',
+                    'import rapt.install_sdk',
+                    'rapt.install_sdk.install_sdk(rapt.interface.Interface())'
+                ].join('\n')
+            ];
+            yield (0, system_1.renpyPythonExec)(this.install_dir, args, setupinfo);
+        });
+    }
+    updateKeyValueConfig(file, pairs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const content = (0, renpy_1.stringToAndroidProperties)(fs.readFileSync(file).toString());
+            for (const k in pairs) {
+                content[k] = pairs[k];
+            }
+            fs.writeFileSync(file, (0, renpy_1.androidPropertiesToString)(content));
+        });
+    }
     updateCurrentJson(update) {
         return __awaiter(this, void 0, void 0, function* () {
-            const update_file = path_1.default.join(this.install_dir, 'update', 'current.json');
-            const content = JSON.parse(fs_1.default.readFileSync(update_file, 'utf-8'));
+            const update_file = path.join(this.install_dir, 'update', 'current.json');
+            const content = JSON.parse(fs.readFileSync(update_file, 'utf-8'));
             for (const k in update) {
                 content[k] = update[k];
             }
-            fs_1.default.writeFileSync(update_file, JSON.stringify(content, null, 2));
+            fs.writeFileSync(update_file, JSON.stringify(content, null, 2));
         });
     }
 }
@@ -15385,13 +15492,54 @@ exports.RenpyInstaller = RenpyInstaller;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.RenPyInputsSupportedAction = void 0;
+exports.RenpyAndroidBuildTypes = exports.RenPyInputsSupportedAction = void 0;
 var RenPyInputsSupportedAction;
 (function (RenPyInputsSupportedAction) {
+    RenPyInputsSupportedAction["AndroidBuild"] = "android_build";
     RenPyInputsSupportedAction["Distribute"] = "distribute";
+    RenPyInputsSupportedAction["Exec"] = "exec";
     RenPyInputsSupportedAction["Install"] = "install";
     RenPyInputsSupportedAction["Lint"] = "lint";
+    RenPyInputsSupportedAction["Nothing"] = "nothing";
+    RenPyInputsSupportedAction["Translate"] = "translate";
 })(RenPyInputsSupportedAction = exports.RenPyInputsSupportedAction || (exports.RenPyInputsSupportedAction = {}));
+/* Action-specific parameters */
+var RenpyAndroidBuildTypes;
+(function (RenpyAndroidBuildTypes) {
+    RenpyAndroidBuildTypes["PlayBundle"] = "aab";
+    RenpyAndroidBuildTypes["UniversalAPK"] = "apk";
+})(RenpyAndroidBuildTypes = exports.RenpyAndroidBuildTypes || (exports.RenpyAndroidBuildTypes = {}));
+
+
+/***/ }),
+
+/***/ 8942:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.stringToAndroidProperties = exports.androidPropertiesToString = void 0;
+function androidPropertiesToString(props) {
+    return Object.keys(props)
+        .sort()
+        .map(k => `${k}=${props[k]}`)
+        .join('\n');
+}
+exports.androidPropertiesToString = androidPropertiesToString;
+function stringToAndroidProperties(str) {
+    return str
+        .split('\n')
+        .map(s => s.trim().split('='))
+        .filter(s => s.length >= 2) // Remove all empty/blank lines
+        .reduce((p, s) => {
+        const key = s.splice(0, 1)[0].trim();
+        const value = s.join('=').trim();
+        p[key] = value;
+        return p;
+    }, {});
+}
+exports.stringToAndroidProperties = stringToAndroidProperties;
 
 
 /***/ }),
@@ -15434,7 +15582,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.main = void 0;
 const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
 const os = __importStar(__nccwpck_require__(2037));
 const executor_1 = __nccwpck_require__(5582);
 const parameters_1 = __nccwpck_require__(1384);
@@ -15445,11 +15595,20 @@ const logger = (0, parameters_1.getLogger)();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            if (!['win32', 'linux'].includes(os.platform())) {
+            if (!['darwin', 'win32', 'linux'].includes(os.platform())) {
                 throw Error(`Unsupported platform: ${os.platform()}`);
             }
             const opts = (0, parameters_1.parseInputs)();
             const executor = new executor_1.RenpyExecutor(opts.install_dir);
+            if (opts.java_home) {
+                /*
+                  Update environment to ensure child processes have
+                  the right configuration when commands should rely
+                  on android
+                */
+                process.env['JAVA_HOME'] = opts.java_home;
+                process.env['PATH'] = `${path.join(opts.java_home, 'bin')}${path.delimiter}${process.env['PATH']}`;
+            }
             if (opts.action == parameters_2.RenPyInputsSupportedAction.Install || !fs.existsSync(opts.install_dir)) {
                 logger.startGroup("Install Ren'Py");
                 if (opts.action != parameters_2.RenPyInputsSupportedAction.Install) {
@@ -15480,6 +15639,23 @@ function main() {
                     yield executor.lint(opts.game_dir, opts.lint_opts);
                     logger.endGroup();
                     break;
+                case parameters_2.RenPyInputsSupportedAction.AndroidBuild:
+                    logger.startGroup('Build android project files');
+                    yield executor.android_build(opts.game_dir, opts.android_build_opts);
+                    logger.endGroup();
+                    break;
+                case parameters_2.RenPyInputsSupportedAction.Exec:
+                    logger.startGroup('Execute command');
+                    yield executor.exec(opts.exec_opts);
+                    logger.endGroup();
+                    break;
+                case parameters_2.RenPyInputsSupportedAction.Nothing:
+                    break;
+                case parameters_2.RenPyInputsSupportedAction.Translate:
+                    logger.startGroup('Translate project');
+                    yield executor.translate(opts.game_dir, opts.translate_opts);
+                    logger.endGroup();
+                    break;
                 default:
                     throw Error(`Unsupported action ${opts.action}`);
             }
@@ -15491,7 +15667,9 @@ function main() {
         }
     });
 }
-main();
+exports.main = main;
+if (require.main === require.cache[eval('__filename')])
+    main();
 
 
 /***/ }),
