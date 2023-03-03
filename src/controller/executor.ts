@@ -8,7 +8,8 @@ import {
   RenpyAndroidBuildTypes,
   RenpyDistributeOptions,
   RenpyExecOptions,
-  RenpyLintOptions
+  RenpyLintOptions,
+  RenpyTranslateOptions
 } from '../model/parameters';
 
 const logger = getLogger();
@@ -72,6 +73,13 @@ export class RenpyExecutor {
   public async exec(opts: RenpyExecOptions): Promise<[string, string]> {
     logger.info(`Running Ren'Py with arguments: ${opts.run}`);
     return await renpyExec(this.directory, opts.run);
+  }
+
+  public async translate(game: string, opts: RenpyTranslateOptions) {
+    for (const language of opts.languages) {
+      logger.info(`Generate translation for language: ${language}`);
+      await renpyExec(this.directory, [game, 'translate', language]);
+    }
   }
 
   public getDirectory(): string {

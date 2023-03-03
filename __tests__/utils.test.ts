@@ -22,8 +22,7 @@ describe('utils.pickOsValue changes its return value depending on the platform',
   let current_platform: NodeJS.Platform = os.platform();
   beforeEach(() => {
     current_platform = os.platform();
-    const spyOsPlatform = jest.spyOn(os, 'platform');
-    spyOsPlatform.mockImplementation(() => current_platform);
+    jest.spyOn(os, 'platform').mockImplementation(() => current_platform);
   });
 
   afterEach(() => {
