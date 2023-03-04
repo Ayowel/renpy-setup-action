@@ -1,10 +1,14 @@
-import * as io from '../../src/adapter/parameters';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as core from '@actions/core';
+import * as io from '../../src/adapter/parameters';
 import {
   RenpyAndroidBuildTypes,
+  RenpyInputs,
   RenPyInputsSupportedAction,
   RenpyOutputs
 } from '../../src/model/parameters';
+import { createTmpDir } from '../helpers/test_helpers.test';
 
 jest.mock('@actions/core');
 
@@ -38,7 +42,7 @@ test('writeOutputs uses @actions/core', () => {
   expect(core.setOutput).toHaveBeenCalledWith('python_path', outputs.python_path);
 });
 
-describe('parseInputs properly handle input values', () => {
+describe('parseInputs handles GitHub input values', () => {
   let input: { [k: string]: string } = {};
   beforeEach(() => {
     input = {
@@ -64,7 +68,7 @@ describe('parseInputs properly handle input values', () => {
     ['  steam  ', ['steam']],
     ['steam, renios', ['steam', 'renios']],
     [' steam renios ', ['steam', 'renios']]
-  ])('Dlc install list is properly parsed: "%s"', (input_dlc, expected) => {
+  ])('Dlc install list is parsed: "%s"', (input_dlc, expected) => {
     input['dlc'] = input_dlc;
     const opts = io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Install);
@@ -78,7 +82,7 @@ describe('parseInputs properly handle input values', () => {
     ['win\nmac', ['win', 'mac']],
     ['win path/to/win\nmac', [['win', 'path/to/win'], 'mac']],
     [' win, mac   path/to/mac  \n linux ', ['win', ['mac', 'path/to/mac'], 'linux']]
-  ])('Package distribution list is properly parsed: "%s"', (input_pkg, expected) => {
+  ])('Package distribution list is parsed: "%s"', (input_pkg, expected) => {
     input['action'] = RenPyInputsSupportedAction.Distribute;
     input['packages'] = input_pkg;
     const opts = io.parseInputs();
@@ -94,13 +98,13 @@ describe('parseInputs properly handle input values', () => {
     expect(io.parseInputs).toThrow();
   });
 
-  test('Lint action is properly detected', () => {
+  test('Lint action is detected', () => {
     input['action'] = RenPyInputsSupportedAction.Lint;
     const opts = io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Lint);
   });
 
-  test('Android build action is properly detected', () => {
+  test('Android build action is detected', () => {
     input['action'] = RenPyInputsSupportedAction.AndroidBuild;
     input['build_type'] = RenpyAndroidBuildTypes.PlayBundle;
     const opts = io.parseInputs();
@@ -110,7 +114,7 @@ describe('parseInputs properly handle input values', () => {
     }
   });
 
-  test('Exec action is properly detected', () => {
+  test('Exec action is detected', () => {
     input['action'] = RenPyInputsSupportedAction.Exec;
     input['run'] = '--help';
     const opts = io.parseInputs();
@@ -124,5 +128,51 @@ describe('parseInputs properly handle input values', () => {
     input['action'] = RenPyInputsSupportedAction.AndroidBuild;
     input['build_type'] = 'sos';
     expect(() => io.parseInputs()).toThrow();
+  });
+
+  test('Translate action is detected', () => {
+    input['action'] = RenPyInputsSupportedAction.Translate;
+    input['languages'] = 'french \n \t \n english';
+    const opts = io.parseInputs();
+    expect(opts.action).toBe(RenPyInputsSupportedAction.Translate);
+    if (opts.action == RenPyInputsSupportedAction.Translate) {
+      expect(opts.translate_opts.languages.sort()).toEqual(['english', 'french']);
+    }
+  });
+
+  describe('Translate action looks up the tl directory if no language is provided', () => {
+    let tmpPath = '';
+    beforeEach(() => {
+      tmpPath = createTmpDir();
+    });
+    afterEach(() => {
+      fs.rmSync(tmpPath, { recursive: true });
+    });
+    test('Translate action only picks up directories in the tl directory', () => {
+      fs.mkdirSync(path.join(tmpPath, 'game', 'tl', 'german'), { recursive: true });
+      fs.mkdirSync(path.join(tmpPath, 'game', 'tl', 'french'));
+      fs.writeFileSync(path.join(tmpPath, 'game', 'tl', 'english'), '');
+      input['action'] = RenPyInputsSupportedAction.Translate;
+      input['game'] = tmpPath;
+      const opts = io.parseInputs();
+      expect(opts.action).toBe(RenPyInputsSupportedAction.Translate);
+      if (opts.action == RenPyInputsSupportedAction.Translate) {
+        expect(opts.translate_opts.languages.sort()).toEqual(['french', 'german']);
+      }
+    });
+    test('Translate action throws if there is no directory in tl while no language was provided', () => {
+      fs.mkdirSync(path.join(tmpPath, 'game', 'tl'), { recursive: true });
+      fs.writeFileSync(path.join(tmpPath, 'game', 'tl', 'english'), '');
+      fs.writeFileSync(path.join(tmpPath, 'game', 'tl', 'french'), '');
+      input['action'] = RenPyInputsSupportedAction.Translate;
+      input['game'] = tmpPath;
+      expect(() => io.parseInputs()).toThrow();
+    });
+    test('Translate action throws if there is no tl directory while no language was provided', () => {
+      fs.mkdirSync(path.join(tmpPath, 'game'));
+      input['action'] = RenPyInputsSupportedAction.Translate;
+      input['game'] = tmpPath;
+      expect(() => io.parseInputs()).toThrow();
+    });
   });
 });

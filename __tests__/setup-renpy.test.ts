@@ -77,6 +77,7 @@ describe('main properly handles input parameters', () => {
     input['action'] = action;
     input['install_dir'] = tmpdir;
     input['build_type'] = 'apk';
+    input['languages'] = 'None';
     await expect(main()).resolves.not.toThrow();
     expect(core.setFailed).not.toHaveBeenCalled();
     expect((RenpyExecutor.prototype as { [id: string]: any })[method]).toHaveBeenCalledTimes(1);
