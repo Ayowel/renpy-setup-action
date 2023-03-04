@@ -14879,6 +14879,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.fail = exports.getLogger = exports.writeOutputs = exports.parseInputs = void 0;
+const fs = __importStar(__nccwpck_require__(7147));
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
@@ -14973,12 +14974,25 @@ function parseInputs() {
             opts = Object.assign(Object.assign({}, opts), { action });
             break;
         case parameters_1.RenPyInputsSupportedAction.Translate:
-            opts = Object.assign(Object.assign({}, opts), { action, translate_opts: {
-                    languages: core
-                        .getInput('languages')
-                        .split(/\s+/)
-                        .filter(v => !!v)
-                } });
+            const languages = core
+                .getInput('languages')
+                .split(/\s+/)
+                .filter(v => !!v);
+            if (languages.length == 0) {
+                const tl_path = path.join(opts.game_dir, 'game', 'tl');
+                if (!fs.existsSync(tl_path)) {
+                    throw Error(`No language was provided, but game/tl could not be found in '${opts.game_dir}' during automatic language detection.`);
+                }
+                for (const p of fs.readdirSync(tl_path)) {
+                    if (fs.statSync(path.join(tl_path, p)).isDirectory()) {
+                        languages.push(p);
+                    }
+                }
+                if (languages.length == 0) {
+                    throw Error(`No translation language was provided, and none was found in '${tl_path}'.`);
+                }
+            }
+            opts = Object.assign(Object.assign({}, opts), { action, translate_opts: { languages } });
             break;
         default:
             throw Error(`Invalid action: ${action}`);
