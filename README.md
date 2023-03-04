@@ -100,7 +100,7 @@ After installing Ren'Py, use the `translate` action to update the game's transla
     action: translate
     install_dir: renpy
     game: project
-    language: french english
+    languages: french english
 ```
 
 ### Get layout information

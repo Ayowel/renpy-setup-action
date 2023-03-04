@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as core from '@actions/core';
@@ -129,15 +130,30 @@ export function parseInputs(): RenpyInputs {
       opts = { ...opts, action };
       break;
     case RenPyInputsSupportedAction.Translate:
+      const languages = core
+        .getInput('languages')
+        .split(/\s+/)
+        .filter(v => !!v);
+      if (languages.length == 0) {
+        const tl_path = path.join(opts.game_dir, 'game', 'tl');
+        if (!fs.existsSync(tl_path)) {
+          throw Error(
+            `No language was provided, but game/tl could not be found in '${opts.game_dir}' during automatic language detection.`
+          );
+        }
+        for (const p of fs.readdirSync(tl_path)) {
+          if (fs.statSync(path.join(tl_path, p)).isDirectory()) {
+            languages.push(p);
+          }
+        }
+        if (languages.length == 0) {
+          throw Error(`No translation language was provided, and none was found in '${tl_path}'.`);
+        }
+      }
       opts = {
         ...opts,
         action,
-        translate_opts: {
-          languages: core
-            .getInput('languages')
-            .split(/\s+/)
-            .filter(v => !!v)
-        }
+        translate_opts: { languages }
       };
       break;
     default:
