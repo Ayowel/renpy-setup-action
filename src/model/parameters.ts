@@ -4,7 +4,6 @@ interface RenpyInputsCore {
   install_dir: string;
   game_dir: string;
   java_home: string;
-  install_opts: RenpyInstallerOptions;
 }
 
 export enum RenPyInputsSupportedAction {
@@ -33,6 +32,7 @@ interface RenpyInputsExecCore extends RenpyInputsCore {
 }
 interface RenpyInputsInstallCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Install;
+  install_opts: RenpyInstallerOptions;
 }
 interface RenpyInputsLintCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Lint;

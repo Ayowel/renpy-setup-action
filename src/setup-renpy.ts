@@ -29,29 +29,12 @@ export async function main() {
       }`;
     }
 
-    if (opts.action == RenPyInputsSupportedAction.Install || !fs.existsSync(opts.install_dir)) {
-      logger.startGroup("Install Ren'Py");
-      if (opts.action != RenPyInputsSupportedAction.Install) {
-        // @deprecated This section will be moved to the switch statement
-        logger.error(
-          "Implicit Ren'Py installation is deprecated and will be removed in a future release.\n" +
-            'Add an `install` action step to your job.'
-        );
-      }
-      const installer = new RenpyInstaller(opts.install_dir, opts.install_opts.version);
-      await installer.install(opts.install_opts);
-      logger.endGroup();
-    }
-
-    const renpy_dir = fs.realpathSync(executor.getDirectory());
-    const outputs: RenpyOutputs = {
-      install_dir: renpy_dir,
-      python_path: getRenpyPythonPath(renpy_dir),
-      renpy_path: getRenpyExecPath(renpy_dir)
-    };
-
     switch (opts.action) {
       case RenPyInputsSupportedAction.Install:
+        logger.startGroup("Install Ren'Py");
+        const installer = new RenpyInstaller(opts.install_dir, opts.install_opts.version);
+        await installer.install(opts.install_opts);
+        logger.endGroup();
         break;
       case RenPyInputsSupportedAction.Distribute:
         logger.startGroup('Generate distribution files');
@@ -85,6 +68,12 @@ export async function main() {
     }
 
     logger.info('Write action outputs');
+    const renpy_dir = fs.realpathSync(executor.getDirectory());
+    const outputs: RenpyOutputs = {
+      install_dir: renpy_dir,
+      python_path: getRenpyPythonPath(renpy_dir),
+      renpy_path: getRenpyExecPath(renpy_dir)
+    };
     writeOutputs(outputs);
   } catch (error) {
     fail(error as Error);

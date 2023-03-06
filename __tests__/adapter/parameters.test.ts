@@ -72,7 +72,9 @@ describe('parseInputs handles GitHub input values', () => {
     input['dlc'] = input_dlc;
     const opts = io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Install);
-    expect(opts.install_opts.dlc_list).toEqual(expected);
+    if (opts.action == RenPyInputsSupportedAction.Install) {
+      expect(opts.install_opts.dlc_list).toEqual(expected);
+    }
   });
 
   it.each([
