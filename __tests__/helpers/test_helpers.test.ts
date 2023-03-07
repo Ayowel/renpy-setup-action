@@ -1,5 +1,5 @@
 import fs from 'fs';
-import https from 'https';
+import crypto from 'crypto';
 import path from 'path';
 import { env } from 'process';
 
@@ -16,7 +16,22 @@ export const describeIf = (condition: boolean, ...args: Parameters<typeof descri
 
 export function initContext() {
   env.RUNNER_TEMP = getCache();
-  jest.spyOn(tc, 'downloadTool').mockImplementation(toolCacheDownloadToolMock);
+  const tcDownloadTool = tc.downloadTool;
+  jest.spyOn(tc, 'downloadTool').mockImplementation(async (url, dest) => {
+    // Use hash to ensure we differentiate between sources
+    const hash = crypto.createHash('md5').update(url).digest('base64');
+    const filename = url.split('/').pop() as string;
+    const cache_path = path.join(getCache(), `${hash.slice(0, 5)}-${filename}`);
+    if (!fs.existsSync(cache_path)) {
+      await tcDownloadTool(url, cache_path);
+    }
+    if (dest) {
+      fs.symlinkSync(dest, cache_path);
+    } else {
+      dest = cache_path;
+    }
+    return fs.realpathSync(dest);
+  });
 }
 
 export function getCache() {
@@ -25,38 +40,4 @@ export function getCache() {
 
 export function createTmpDir(): string {
   return fs.mkdtempSync('jest-setup-renpy-');
-}
-
-export async function toolCacheDownloadToolMock(
-  url: string,
-  dest: string | undefined
-): Promise<string> {
-  const filename = url.split('/').pop() as string;
-  const cache_path = path.join(getCache(), filename);
-  if (fs.existsSync(cache_path)) {
-    if (dest) {
-      fs.symlinkSync(dest, cache_path);
-    } else {
-      dest = cache_path;
-    }
-    return fs.realpathSync(dest);
-  }
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, res => {
-      if (res.statusCode && res.statusCode >= 400) {
-        reject('Received error code');
-      }
-      const filePath = fs.createWriteStream(cache_path);
-      res.pipe(filePath);
-      filePath.on('finish', async () => {
-        filePath.close();
-        if (dest) {
-          fs.symlinkSync(dest, cache_path);
-        } else {
-          dest = cache_path;
-        }
-        resolve(fs.realpathSync(dest));
-      });
-    });
-  });
 }

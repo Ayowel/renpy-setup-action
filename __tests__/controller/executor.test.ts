@@ -21,6 +21,8 @@ beforeAll(async () => {
   await installer.installCore();
 }, 5 * 60 * 1000);
 
+beforeEach(() => initContext());
+
 afterAll(async () => {
   fs.rmSync(readonly_tmp_dir, { recursive: true });
 });
@@ -149,9 +151,10 @@ describe('RenpyExecutor.distribute runs as expected', () => {
   );
 });
 
-describeIf(!!process.env['JAVA_HOME'], 'isAndroidBuildWorking', () => {
+describeIf(!!process.env['JAVA_HOME'], 'RenpyExecutor.android_build runs as expected', () => {
   let renpy_dir = '';
   beforeAll(async () => {
+    initContext();
     renpy_dir = path.join(readonly_tmp_dir, 'renpy_rapt');
     const renpy_version = '8.0.3';
     const opts: RenpyInstallerOptions = {

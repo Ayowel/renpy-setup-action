@@ -35,6 +35,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - uses: actions/cache@v3
+        id: test-cache
+        with:
+          path: test_cache
+          key: ${{ runner.os }}-test-cache
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
