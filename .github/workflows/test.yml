@@ -77,4 +77,3 @@ jobs:
 
       - name: Audit packages
         run: npm audit --audit-level=high
-        if: ${{inputs.enable-audit}}
