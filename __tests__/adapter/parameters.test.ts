@@ -4,7 +4,6 @@ import * as core from '@actions/core';
 import * as io from '../../src/adapter/parameters';
 import {
   RenpyAndroidBuildTypes,
-  RenpyInputs,
   RenPyInputsSupportedAction,
   RenpyOutputs
 } from '../../src/model/parameters';

@@ -10,6 +10,7 @@ import {
   RenpyDistributeOptions,
   RenpyInstallerOptions
 } from '../../src/model/parameters';
+import { GitHubAssetDownload } from '../../src/adapter/download/github';
 
 let readonly_tmp_dir: string;
 let renpy8_dir: string;
@@ -17,7 +18,7 @@ beforeAll(async () => {
   initContext();
   readonly_tmp_dir = createTmpDir();
   renpy8_dir = path.join(readonly_tmp_dir, 'renpy');
-  const installer = new RenpyInstaller(renpy8_dir, '8.0.3');
+  const installer = new RenpyInstaller(renpy8_dir, '8.0.3', new GitHubAssetDownload());
   await installer.installCore();
 }, 5 * 60 * 1000);
 
@@ -107,13 +108,15 @@ describe('RenpyExecutor.exec runs as expected', () => {
 
 describe('RenpyExecutor.distribute runs as expected', () => {
   let game_dir: string;
-  beforeEach(async () => {
+  beforeEach(() => {
     game_dir = createTmpDir();
     tmp_dirs.push(game_dir);
     fs.mkdirSync(path.join(game_dir, 'game'));
-    const script_content = ['define build.name = "testgame"', 'label start:', '    "Hello"'].join(
-      '\n'
-    );
+    const script_content = [
+      'define build.name = "testgame"',
+      'label start:',
+      '    "Hello there"'
+    ].join('\n');
     fs.writeFileSync(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
   });
 
@@ -168,7 +171,7 @@ describeIf(!!process.env['JAVA_HOME'], 'RenpyExecutor.android_build runs as expe
       update_path: false,
       version: renpy_version
     };
-    await new RenpyInstaller(renpy_dir, renpy_version).install(opts);
+    await new RenpyInstaller(renpy_dir, renpy_version, new GitHubAssetDownload()).install(opts);
   }, 5 * 60 * 1000);
 
   beforeEach(async () => {

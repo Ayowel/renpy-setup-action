@@ -2,46 +2,31 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import * as core from '@actions/core';
-import * as httpm from '@actions/http-client';
 import * as tc from '@actions/tool-cache';
-import * as tar from 'tar';
-
 import { getLogger } from '../adapter/parameters';
 import { renpyPythonExec } from '../adapter/system';
 import { RenpyInstallerOptions } from '../model/parameters';
 import {
-  RenpyRootFile,
-  RenpyUpdateFile,
-  RenpyDlcUpdateInfo,
-  RenpyDlcUpdateCurrent,
   RenpyAndroidProperties,
   androidPropertiesToString,
   stringToAndroidProperties
 } from '../model/renpy';
-import { pickOsValue } from '../utils';
+import { AssetDownload } from '../adapter/download/interface';
 
 const logger = getLogger();
 
 export class RenpyInstaller {
-  protected http: httpm.HttpClient;
   protected version: string;
   protected install_dir: string;
-  protected base_url: string;
-  protected meta: RenpyRootFile | undefined;
+  protected downloader: AssetDownload;
 
-  constructor(directory: string, version: string) {
-    this.http = new httpm.HttpClient('github/ayowel/setup-renpy', undefined, {
-      allowRetries: true,
-      maxRetries: 3
-    });
+  constructor(directory: string, version: string, downloader: AssetDownload) {
     this.version = version;
     this.install_dir = directory;
-    this.meta = undefined;
-    this.base_url = `https://www.renpy.org/dl/${this.version}`;
+    this.downloader = downloader;
   }
 
   public async install(opts: RenpyInstallerOptions) {
-    await this.load();
     logger.info(`Installing Ren'Py version ${opts.version}`);
     await this.installCore();
     if (opts.dlc_list.length > 0) {
@@ -84,16 +69,6 @@ export class RenpyInstaller {
     }
   }
 
-  public async load() {
-    const update_url = `${this.base_url}/updates.json`;
-    const res = await this.http.getJson<RenpyRootFile>(update_url);
-    if (res && res.result) {
-      this.meta = res.result;
-    } else {
-      throw Error(`Failed to load meta-information from ${update_url}`);
-    }
-  }
-
   public async installCore() {
     if (fs.existsSync(this.install_dir)) {
       throw Error(
@@ -102,66 +77,19 @@ export class RenpyInstaller {
     }
 
     logger.info("Downloading Ren'Py archive");
-    // Windows and Mac tar supports zip files
-    const core_file_ext = pickOsValue('zip', 'tar.bz2', 'zip');
-    const core_url = `${this.base_url}/renpy-${this.version}-sdk.${core_file_ext}`;
-    logger.debug(`Download from ${core_url}`);
-    const core_archive = await tc.downloadTool(core_url);
+    const core_archive = await this.downloader.download_installer(this.version);
     logger.debug(`Start extraction of Ren'Py archive ${core_archive}`);
     fs.mkdirSync(this.install_dir, { recursive: true });
-    const out = await tc.extractTar(core_archive, this.install_dir, ['x', '--strip-components=1']);
-  }
-
-  public getMetadata(): RenpyRootFile | undefined {
-    return this.meta;
+    // Windows and Mac tar supports zip files
+    await tc.extractTar(core_archive, this.install_dir, ['x', '--strip-components=1']);
   }
 
   public async installDlc(dlc: string) {
-    if (!this.meta) {
-      throw Error('Missing metadata, ensure that you called `load` after init.');
-    }
-    if (!this.meta[dlc] && !(this.meta[dlc] instanceof String)) {
-      throw Error(`The requested DLC does not exist in the update index (${dlc}).`);
-    }
-
-    const dlc_info = this.meta[dlc];
-
-    // Get metadata
-    const json_url = `${this.base_url}/${dlc_info.json_url}`;
-    logger.debug(`Load update metadata for ${dlc} from ${json_url}.`);
-    const dlc_content = (await this.http.getJson<RenpyUpdateFile>(json_url)).result;
-    if (!dlc_content || !dlc_content[dlc]) {
-      throw Error(`Failed to read dlc update file for (${dlc}).`);
-    }
-
     // Download & extract files
-    const gz_name = path.basename(dlc_info.json_url, '.json');
-    const gz_url = `${this.base_url}/${gz_name}.gz`;
-    logger.debug(`Download from ${gz_url}.`);
-    const gz_file = await tc.downloadTool(gz_url);
+    logger.debug(`Download dlc ${dlc}.`);
+    const file = await this.downloader.download_dlc(this.version, dlc);
     logger.debug(`Extracting downloaded dlc file.`);
-
-    const file_list = this.buildDlcFilelist(dlc_content[dlc]);
-    tar.x(
-      {
-        cwd: this.install_dir,
-        file: gz_file,
-        sync: true
-      },
-      file_list
-    );
-    await this.updateCurrentJson(dlc_content);
-  }
-
-  private buildDlcFilelist(update: RenpyDlcUpdateInfo): string[] {
-    const filelist: string[] = [];
-    if (update.directories) {
-      filelist.push(...update.directories);
-    }
-    if (update.files) {
-      filelist.push(...update.files);
-    }
-    return filelist;
+    await tc.extractZip(file, this.install_dir);
   }
 
   public async installAndroidSdk(setupinfo: string) {
@@ -185,14 +113,5 @@ export class RenpyInstaller {
       content[k] = pairs[k];
     }
     fs.writeFileSync(file, androidPropertiesToString(content));
-  }
-
-  private async updateCurrentJson(update: RenpyDlcUpdateCurrent) {
-    const update_file = path.join(this.install_dir, 'update', 'current.json');
-    const content = JSON.parse(fs.readFileSync(update_file, 'utf-8')) as RenpyDlcUpdateCurrent;
-    for (const k in update) {
-      content[k] = update[k];
-    }
-    fs.writeFileSync(update_file, JSON.stringify(content, null, 2));
   }
 }

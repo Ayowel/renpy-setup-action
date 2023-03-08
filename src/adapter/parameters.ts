@@ -28,7 +28,7 @@ export function parseInputs(): RenpyInputs {
         ...opts,
         action,
         install_opts: {
-          version: core.getInput('version') || '8.0.3',
+          version: core.getInput('version') || 'latest',
           dlc_list: core
             .getInput('dlc')
             .split(/,|\s+/)
@@ -45,6 +45,13 @@ export function parseInputs(): RenpyInputs {
           android_apk_properties: stringToAndroidProperties(
             core.getInput('android_apk_properties') || core.getInput('android_properties')
           )
+        },
+        downloader_opts: {
+          use_github: stringToBool(core.getInput('use_github_releases'), true),
+          use_cdn: stringToBool(core.getInput('use_cdn'), true),
+          github_repo: core.getInput('github_releases_repo'),
+          github_token: core.getInput('github_token', { required: true }),
+          cdn_base_url: core.getInput('cdn_url')
         }
       };
       const iopts = opts.install_opts;

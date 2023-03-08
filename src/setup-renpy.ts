@@ -6,6 +6,7 @@ import { getLogger, parseInputs, writeOutputs, fail } from './adapter/parameters
 import { RenpyInstaller } from './controller/installer';
 import { RenPyInputsSupportedAction, RenpyOutputs } from './model/parameters';
 import { getRenpyPythonPath, getRenpyExecPath } from './adapter/system';
+import { AssetDownloader } from './controller/downloader';
 
 const logger = getLogger();
 
@@ -32,7 +33,12 @@ export async function main() {
     switch (opts.action) {
       case RenPyInputsSupportedAction.Install:
         logger.startGroup("Install Ren'Py");
-        const installer = new RenpyInstaller(opts.install_dir, opts.install_opts.version);
+        const downloader = new AssetDownloader(opts.downloader_opts);
+        const installer = new RenpyInstaller(
+          opts.install_dir,
+          opts.install_opts.version,
+          downloader
+        );
         await installer.install(opts.install_opts);
         logger.endGroup();
         break;

@@ -33,6 +33,7 @@ interface RenpyInputsExecCore extends RenpyInputsCore {
 interface RenpyInputsInstallCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Install;
   install_opts: RenpyInstallerOptions;
+  downloader_opts: RenpyAssetDownloaderOptions;
 }
 interface RenpyInputsLintCore extends RenpyInputsCore {
   action: RenPyInputsSupportedAction.Lint;
@@ -81,6 +82,14 @@ export interface RenpyInstallerOptions {
   android_sdk: boolean;
   android_sdk_owner: string;
   android_sdk_install_input: string;
+}
+
+export interface RenpyAssetDownloaderOptions {
+  use_github: boolean;
+  github_repo: string;
+  github_token: string;
+  use_cdn: boolean;
+  cdn_base_url: string;
 }
 
 export interface RenpyDistributeOptions {
