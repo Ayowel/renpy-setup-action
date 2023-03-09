@@ -41,6 +41,22 @@ inputs:
   version:
     description: "Ren'Py version to install"
     required: false
+  github_token:
+    description: The GitHub token used when accessing the GitHub API
+    default: ${{ github.token }}
+    required: false
+  use_github_releases:
+    description: "Whether to download Ren'Py from GitHub releases"
+    required: false
+  github_releases_repo:
+    description: "The GitHub repository where Ren'Py is released"
+    required: false
+  use_cdn:
+    description: "Whether to download Ren'Py from the website"
+    required: false
+  cdn_url:
+    description: "The CDN that hosts Ren'Py releases"
+    required: false
   # All non-install actions
   game:
     description: "Path to the game's directory"

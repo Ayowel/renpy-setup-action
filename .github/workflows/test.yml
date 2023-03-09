@@ -35,6 +35,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - uses: actions/cache@v3
+        id: test-cache
+        with:
+          path: test_cache
+          key: ${{ runner.os }}-test-cache
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -60,6 +66,8 @@ jobs:
 
       - name: Test
         run: npm test -- --coverage
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Codecov
         uses: codecov/codecov-action@v3
@@ -69,4 +77,3 @@ jobs:
 
       - name: Audit packages
         run: npm audit --audit-level=high
-        if: ${{inputs.enable-audit}}

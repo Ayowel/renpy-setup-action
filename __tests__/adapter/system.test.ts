@@ -4,6 +4,7 @@ import path from 'path';
 import { createTmpDir, initContext } from '../helpers/test_helpers.test';
 import { RenpyInstaller } from '../../src/controller/installer';
 import { getRenpyExecPath, getRenpyPythonPath } from '../../src/adapter/system';
+import { GitHubAssetDownload } from '../../src/adapter/download/github';
 
 let readonly_tmp_dir: string;
 let renpy8_dir: string;
@@ -11,7 +12,7 @@ beforeAll(async () => {
   initContext();
   readonly_tmp_dir = createTmpDir();
   renpy8_dir = path.join(readonly_tmp_dir, 'renpy');
-  const installer = new RenpyInstaller(renpy8_dir, '8.0.3');
+  const installer = new RenpyInstaller(renpy8_dir, '8.0.3', new GitHubAssetDownload());
   await installer.installCore();
 }, 5 * 60 * 1000);
 

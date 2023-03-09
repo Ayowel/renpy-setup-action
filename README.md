@@ -38,7 +38,6 @@ jobs:
         with:
           action: install
           install_dir: renpy
-          version: 8.0.3
       # Update/Replace the step below to do something different
       - name: Print help message
         uses: Ayowel/renpy-setup-action@v1.2.1
@@ -160,7 +159,6 @@ jobs:
         with:
           action: install
           install_dir: renpy
-          version: 8.0.3
           dlc: rapt
           android_sdk: true
           android_properties: |
@@ -208,8 +206,9 @@ This action supports the following inputs:
     live2d: https://cubism.live2d.com/sdk-native/bin/CubismSdkForNative-4-r.5.1.zip
     # Whether Ren'Py's directory should be added to the PATH
     update_path: false
-    # Downloaded Ren'Py version when installing
-    version: 8.0.3
+    # Ren'Py version to install. Defaults to the latest GitHub Release
+    version: latest
+    ## Android install inputs
     # Whether to install the Android SDK
     android_sdk: false
     # Input for the SDK installation process - this should not be used in most cases
@@ -221,6 +220,18 @@ This action supports the following inputs:
     android_properties:
     android_aab_properties:
     android_apk_properties:
+    ## Install data source inputs
+    # Whether to download release assets from GitHub
+    use_github_releases: true
+    # The GitHub repository that releases assets for the desired release
+    github_releases_repo: renpy/renpy
+    # The GitHub token to use to query the api. Defaults to the workflow's token
+    github_token: ${{ github.token }}
+    # Whether to use Ren'Py's CDN
+    # If use_github is true, it will be search for the desired version first
+    use_cdn: true
+    # The base URL of the CDN that provides Ren'Py's releases' assets
+    cdn_url: https://www.renpy.org/dl
 
     ### DISTRIBUTE INPUTS ###
     # Comma/newline-separated list of packages that should

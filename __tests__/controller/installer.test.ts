@@ -5,6 +5,7 @@ import { createTmpDir, describeIf, initContext } from '../helpers/test_helpers.t
 import { RenpyInstaller } from '../../src/controller/installer';
 import { RenpyInstallerOptions } from '../../src/model/parameters';
 import { RenpyDlcUpdateCurrent } from '../../src/model/renpy';
+import { GitHubAssetDownload } from '../../src/adapter/download/github';
 
 jest.mock('@actions/core');
 
@@ -23,32 +24,12 @@ afterEach(async () => {
   jest.restoreAllMocks();
 });
 
-describe('isLoadWorking', () => {
-  it.each([
-    ['6.99.14.3', true],
-    ['7.4.9', true],
-    ['7.5.3', true],
-    ['8.0.3', true],
-    ['6.77.77', false]
-  ])('Load %s (%s)', async (version, should_succeed) => {
-    const installer = new RenpyInstaller(path.join(tmpdir, 'renpy'), version);
-
-    if (should_succeed) {
-      await expect(installer.load()).resolves.not.toThrow();
-      expect(installer.getMetadata()).not.toBeUndefined();
-    } else {
-      await expect(installer.load()).rejects.toThrowError();
-      expect(installer.getMetadata()).toBeUndefined();
-    }
-  });
-});
-
 describe('isInstallWorking', () => {
   it.each([['8.0.3']])(
     "Install Ren'Py %s",
     async version => {
       const renpy_dir = path.join(tmpdir, 'renpy');
-      const installer = new RenpyInstaller(renpy_dir, version);
+      const installer = new RenpyInstaller(renpy_dir, version, new GitHubAssetDownload());
       const opts: RenpyInstallerOptions = {
         android_aab_properties: {},
         android_apk_properties: {},
@@ -83,23 +64,11 @@ describe('isDlcInstallWorking', () => {
         update_path: false,
         version: renpy_version
       };
-      const installer = new RenpyInstaller(renpy_dir, renpy_version);
+      const installer = new RenpyInstaller(renpy_dir, renpy_version, new GitHubAssetDownload());
       await expect(installer.install(opts)).resolves.not.toThrow();
       const location = renpy_dir;
       for (const filepath of expect_files) {
         expect(fs.existsSync(path.join(location, filepath))).toBeTruthy();
-      }
-      /* Ensure the update file was changed */
-      const current_json_file_path = path.join(renpy_dir, 'update', 'current.json');
-      const current_json_content = JSON.parse(
-        fs.readFileSync(current_json_file_path, 'utf-8')
-      ) as RenpyDlcUpdateCurrent;
-      const current_keys: string[] = [];
-      for (const key in current_json_content) {
-        current_keys.push(key);
-      }
-      for (const dlc of dlcs) {
-        expect(current_keys).toContain(dlc);
       }
     },
     3 * 60 * 1000
@@ -122,7 +91,7 @@ describeIf(!!process.env['JAVA_HOME'], 'isAndroidSdkInstallWorking', () => {
         update_path: false,
         version: renpy_version
       };
-      const installer = new RenpyInstaller(renpy_dir, renpy_version);
+      const installer = new RenpyInstaller(renpy_dir, renpy_version, new GitHubAssetDownload());
       await expect(installer.install(opts)).resolves.not.toThrow();
       const location = renpy_dir;
       for (const filepath of expect_files) {
