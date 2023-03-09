@@ -24,6 +24,7 @@ export class GitHubAssetDownload implements AssetDownload {
   }
 
   public async download_dlc(version: string, dlc: string): Promise<string> {
+    logger.info(`Download DLC ${dlc} for version ${version} from GitHub Release.`);
     const info = await this.get_release_info(version);
     const sdk_assets = info.assets.filter(a => a.name.match(`-${dlc}\\.`));
     if (sdk_assets.length > 1) {
@@ -35,6 +36,7 @@ export class GitHubAssetDownload implements AssetDownload {
   }
 
   public async download_installer(version: string): Promise<string> {
+    logger.info(`Download installer for version ${version} from GitHub Release.`);
     const info = await this.get_release_info(version);
     const sdk_assets = info.assets.filter(a => a.name.match(/-sdk\./));
     const os_sdk = sdk_assets.filter(a => a.name.endsWith(pickOsValue('zip', 'tar.bz2', 'zip')));

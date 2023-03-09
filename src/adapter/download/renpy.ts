@@ -22,6 +22,7 @@ export class RenpyAssetDownload implements AssetDownload {
   }
 
   public async download_installer(version: string): Promise<string> {
+    logger.info(`Download installer for version ${version} from CDN.`);
     const info = await this.get_release_info(version);
     const sdk_url = `${this.base_url}/${version}/${info.sdk.zsync_url.slice(0, -5)}${pickOsValue(
       'zip',
@@ -32,6 +33,7 @@ export class RenpyAssetDownload implements AssetDownload {
   }
 
   public async download_dlc(version: string, dlc: string): Promise<string> {
+    logger.info(`Download DLC ${dlc} for version ${version} from CDN.`);
     const info = await this.get_release_info(version);
     if (!info[dlc]) {
       throw Error(`Could not find dlc ${dlc} for Ren'Py version ${version}`);
