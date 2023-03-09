@@ -44,6 +44,12 @@ export async function main() {
         break;
       case RenPyInputsSupportedAction.Distribute:
         logger.startGroup('Generate distribution files');
+        const old_game_dir = path.join(opts.game_dir, 'old-game');
+        if (fs.existsSync(old_game_dir) && fs.readdirSync(old_game_dir).length == 0) {
+          logger.error(
+            `The game in ${opts.game_dir} contains an old-game dir, but it is empty. This is probably an error`
+          );
+        }
         await executor.distribute(opts.game_dir, opts.distribute_opts);
         logger.endGroup();
         break;
