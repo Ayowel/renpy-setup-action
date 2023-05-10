@@ -40,10 +40,11 @@ export function androidPropertiesToString(props: RenpyAndroidProperties): string
 }
 
 export function stringToAndroidProperties(str: string): RenpyAndroidProperties {
+  // If a line does not contain an '=' sign, it is silently ignored
   return str
     .split('\n')
     .map(s => s.trim().split('='))
-    .filter(s => s.length >= 2) // Remove all empty/blank lines
+    .filter(s => s.length >= 2)
     .reduce((p, s) => {
       const key = s.splice(0, 1)[0].trim();
       const value = s.join('=').trim();

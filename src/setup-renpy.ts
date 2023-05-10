@@ -6,6 +6,7 @@ import { getLogger, parseInputs, writeOutputs, fail } from './adapter/parameters
 import { RenpyInstaller } from './controller/installer';
 import { RenPyInputsSupportedAction, RenpyOutputs } from './model/parameters';
 import { getRenpyPythonPath, getRenpyExecPath } from './adapter/system';
+import { AssetDownloader } from './controller/downloader';
 
 const logger = getLogger();
 
@@ -29,32 +30,26 @@ export async function main() {
       }`;
     }
 
-    if (opts.action == RenPyInputsSupportedAction.Install || !fs.existsSync(opts.install_dir)) {
-      logger.startGroup("Install Ren'Py");
-      if (opts.action != RenPyInputsSupportedAction.Install) {
-        // @deprecated This section will be moved to the switch statement
-        logger.error(
-          "Implicit Ren'Py installation is deprecated and will be removed in a future release.\n" +
-            'Add an `install` action step to your job.'
-        );
-      }
-      const installer = new RenpyInstaller(opts.install_dir, opts.install_opts.version);
-      await installer.install(opts.install_opts);
-      logger.endGroup();
-    }
-
-    const renpy_dir = fs.realpathSync(executor.getDirectory());
-    const outputs: RenpyOutputs = {
-      install_dir: renpy_dir,
-      python_path: getRenpyPythonPath(renpy_dir),
-      renpy_path: getRenpyExecPath(renpy_dir)
-    };
-
     switch (opts.action) {
       case RenPyInputsSupportedAction.Install:
+        logger.startGroup("Install Ren'Py");
+        const downloader = new AssetDownloader(opts.downloader_opts);
+        const installer = new RenpyInstaller(
+          opts.install_dir,
+          opts.install_opts.version,
+          downloader
+        );
+        await installer.install(opts.install_opts);
+        logger.endGroup();
         break;
       case RenPyInputsSupportedAction.Distribute:
         logger.startGroup('Generate distribution files');
+        const old_game_dir = path.join(opts.game_dir, 'old-game');
+        if (fs.existsSync(old_game_dir) && fs.readdirSync(old_game_dir).length == 0) {
+          logger.error(
+            `The game in ${opts.game_dir} contains an old-game dir, but it is empty. This is probably an error`
+          );
+        }
         await executor.distribute(opts.game_dir, opts.distribute_opts);
         logger.endGroup();
         break;
@@ -85,6 +80,12 @@ export async function main() {
     }
 
     logger.info('Write action outputs');
+    const renpy_dir = fs.realpathSync(executor.getDirectory());
+    const outputs: RenpyOutputs = {
+      install_dir: renpy_dir,
+      python_path: getRenpyPythonPath(renpy_dir),
+      renpy_path: getRenpyExecPath(renpy_dir)
+    };
     writeOutputs(outputs);
   } catch (error) {
     fail(error as Error);

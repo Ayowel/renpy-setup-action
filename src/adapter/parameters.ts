@@ -19,53 +19,56 @@ export function parseInputs(): RenpyInputs {
     action: undefined,
     game_dir: core.getInput('game') || '.',
     java_home: core.getInput('java_home'),
-    install_dir: install_dir || path.join(os.homedir(), '.renpy_exec'),
-    install_opts: {
-      version: core.getInput('version') || '8.0.3',
-      dlc_list: core
-        .getInput('dlc')
-        .split(/,|\s+/)
-        .map(v => v.trim())
-        .filter(s => !!s),
-      live2d_url: core.getInput('live2d'),
-      update_path: stringToBool(core.getInput('update_path'), false),
-      android_sdk: stringToBool(core.getInput('android_sdk'), false),
-      android_sdk_owner: core.getInput('android_sdk_owner'),
-      android_sdk_install_input: core.getInput('android_sdk_install_input'),
-      android_aab_properties: stringToAndroidProperties(
-        core.getInput('android_aab_properties') || core.getInput('android_properties')
-      ),
-      android_apk_properties: stringToAndroidProperties(
-        core.getInput('android_apk_properties') || core.getInput('android_properties')
-      )
-    }
+    install_dir: install_dir || path.join(os.homedir(), '.renpy_exec')
   };
-  logger.debug(`Mapped dlc input "${core.getInput('dlc')}" to ${opts.install_opts.dlc_list}`);
-  if (opts.action != 'install') {
-    // Validate install args here
-    const iopts = opts.install_opts;
-    if (iopts.android_sdk && !iopts.dlc_list.includes('rapt')) {
-      logger.warning(
-        "The android_sdk will be installed but 'rapt' is not in the dlc list. This is probably a mistake."
-      );
-    }
-    if (
-      (Object.keys(iopts.android_aab_properties).length > 0 ||
-        Object.keys(iopts.android_apk_properties).length > 0) &&
-      iopts.android_sdk == false
-    ) {
-      logger.warning(
-        'android_properties are provided, but the android_sdk is not set to be installed. This is probably a mistake.'
-      );
-    }
-  }
   const action = core.getInput('action');
   switch (action) {
     case RenPyInputsSupportedAction.Install:
       opts = {
         ...opts,
-        action
+        action,
+        install_opts: {
+          version: core.getInput('version') || 'latest',
+          dlc_list: core
+            .getInput('dlc')
+            .split(/,|\s+/)
+            .map(v => v.trim())
+            .filter(s => !!s),
+          live2d_url: core.getInput('live2d'),
+          update_path: stringToBool(core.getInput('update_path'), false),
+          android_sdk: stringToBool(core.getInput('android_sdk'), false),
+          android_sdk_owner: core.getInput('android_sdk_owner'),
+          android_sdk_install_input: core.getInput('android_sdk_install_input'),
+          android_aab_properties: stringToAndroidProperties(
+            core.getInput('android_aab_properties') || core.getInput('android_properties')
+          ),
+          android_apk_properties: stringToAndroidProperties(
+            core.getInput('android_apk_properties') || core.getInput('android_properties')
+          )
+        },
+        downloader_opts: {
+          use_github: stringToBool(core.getInput('use_github_releases'), true),
+          use_cdn: stringToBool(core.getInput('use_cdn'), true),
+          github_repo: core.getInput('github_releases_repo'),
+          github_token: core.getInput('github_token', { required: true }),
+          cdn_base_url: core.getInput('cdn_url')
+        }
       };
+      const iopts = opts.install_opts;
+      if (iopts.android_sdk && !iopts.dlc_list.includes('rapt')) {
+        logger.warning(
+          "The android_sdk will be installed but 'rapt' is not in the dlc list. This is probably a mistake."
+        );
+      }
+      if (
+        (Object.keys(iopts.android_aab_properties).length > 0 ||
+          Object.keys(iopts.android_apk_properties).length > 0) &&
+        iopts.android_sdk == false
+      ) {
+        logger.warning(
+          'android_properties are provided, but the android_sdk is not set to be installed. This is probably a mistake.'
+        );
+      }
       break;
     case RenPyInputsSupportedAction.AndroidBuild:
       const build_type = core.getInput('build_type');
