@@ -58,14 +58,34 @@ export class RenpyInstaller {
       await this.installAndroidSdk(sdk_input);
       logger.info('Configure Android SDK build properties');
       const project_path = path.join(this.install_dir, 'rapt', 'project');
-      await this.updateKeyValueConfig(
-        path.join(project_path, 'bundle.properties'),
-        opts.android_aab_properties
-      );
-      await this.updateKeyValueConfig(
-        path.join(project_path, 'local.properties'),
-        opts.android_apk_properties
-      );
+
+      for (const target_pair of [
+        ['bundle', 'bundle'],
+        ['local', 'android']
+      ]) {
+        const default_properties = {
+          // Sets the default key values if none is set
+          'key.alias': 'android',
+          'key.store.password': 'android',
+          'key.alias.password': 'android',
+          'key.store': path.join(
+            path.resolve(this.install_dir),
+            'rapt',
+            `${target_pair[1]}.keystore`
+          ),
+          'sdk.dir': path.join(path.resolve(this.install_dir), 'rapt', 'Sdk')
+        };
+        const updated_keys = await this.updateKeyValueConfig(
+          path.join(project_path, `${target_pair[0]}.properties`),
+          opts.android_aab_properties,
+          default_properties
+        );
+        if (!fs.existsSync(updated_keys['key.store'])) {
+          logger.warning(
+            `The keystore path in ${target_pair[0]} does not appear to map to an existing keystore file (${updated_keys['key.store']}).`
+          );
+        }
+      }
     }
   }
 
@@ -104,14 +124,26 @@ export class RenpyInstaller {
         'rapt.install_sdk.install_sdk(rapt.interface.Interface())'
       ].join('\n')
     ];
-    await renpyPythonExec(this.install_dir, args, setupinfo);
+    return await renpyPythonExec(this.install_dir, args, setupinfo);
   }
 
-  public async updateKeyValueConfig(file: string, pairs: RenpyAndroidProperties) {
-    const content = stringToAndroidProperties(fs.readFileSync(file).toString());
+  public async updateKeyValueConfig(
+    file: string,
+    pairs: RenpyAndroidProperties,
+    additional_pairs: RenpyAndroidProperties = {}
+  ): Promise<RenpyAndroidProperties> {
+    const content: RenpyAndroidProperties = fs.existsSync(file)
+      ? stringToAndroidProperties(fs.readFileSync(file).toString())
+      : {};
     for (const k in pairs) {
       content[k] = pairs[k];
     }
+    for (const k in additional_pairs) {
+      if (!(k in content)) {
+        content[k] = additional_pairs[k];
+      }
+    }
     fs.writeFileSync(file, androidPropertiesToString(content));
+    return content;
   }
 }

@@ -4,7 +4,6 @@ import path from 'path';
 import { createTmpDir, describeIf, initContext } from '../helpers/test_helpers.test';
 import { RenpyInstaller } from '../../src/controller/installer';
 import { RenpyInstallerOptions } from '../../src/model/parameters';
-import { RenpyDlcUpdateCurrent } from '../../src/model/renpy';
 import { GitHubAssetDownload } from '../../src/adapter/download/github';
 
 jest.mock('@actions/core');
@@ -76,7 +75,10 @@ describe('isDlcInstallWorking', () => {
 });
 
 describeIf(!!process.env['JAVA_HOME'], 'isAndroidSdkInstallWorking', () => {
-  it.each([['8.0.3', ['rapt', 'rapt/Sdk']]])(
+  it.each([
+    ['8.0.3', ['rapt', 'rapt/Sdk']],
+    ['8.1.3', ['rapt', 'rapt/Sdk']]
+  ])(
     'Install Renpy %s DLC %s',
     async (renpy_version, expect_files) => {
       const renpy_dir = path.join(tmpdir, 'renpy');

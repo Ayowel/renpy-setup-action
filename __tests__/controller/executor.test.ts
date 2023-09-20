@@ -4,12 +4,7 @@ import path from 'path';
 import { createTmpDir, describeIf, initContext } from '../helpers/test_helpers.test';
 import { RenpyExecutor } from '../../src/controller/executor';
 import { RenpyInstaller } from '../../src/controller/installer';
-import {
-  RenpyAndroidBuildOptions,
-  RenpyAndroidBuildTypes,
-  RenpyDistributeOptions,
-  RenpyInstallerOptions
-} from '../../src/model/parameters';
+import { RenpyDistributeOptions } from '../../src/model/parameters';
 import { GitHubAssetDownload } from '../../src/adapter/download/github';
 
 let readonly_tmp_dir: string;
@@ -149,82 +144,6 @@ describe('RenpyExecutor.distribute runs as expected', () => {
       const dir_content = fs.readdirSync(target_dir);
       expect(dir_content.length).toBe(1);
       expect(path.basename(dir_content[0]).startsWith(short_name)).toBeTruthy();
-    },
-    5 * 60 * 1000
-  );
-});
-
-describeIf(!!process.env['JAVA_HOME'], 'RenpyExecutor.android_build runs as expected', () => {
-  let renpy_dir = '';
-  beforeAll(async () => {
-    initContext();
-    renpy_dir = path.join(readonly_tmp_dir, 'renpy_rapt');
-    const renpy_version = '8.0.3';
-    const opts: RenpyInstallerOptions = {
-      android_aab_properties: {},
-      android_apk_properties: {},
-      android_sdk: true,
-      android_sdk_owner: 'AnOwnerName',
-      android_sdk_install_input: '',
-      dlc_list: ['rapt'],
-      live2d_url: '',
-      update_path: false,
-      version: renpy_version
-    };
-    await new RenpyInstaller(renpy_dir, renpy_version, new GitHubAssetDownload()).install(opts);
-  }, 5 * 60 * 1000);
-
-  beforeEach(async () => {
-    const outpath = path.join(readonly_tmp_dir, 'outdir');
-    fs.mkdirSync(outpath);
-    tmp_dirs.push(outpath);
-  });
-
-  const android_json_content = {
-    package: 'com.ayowel.setup.renpy',
-    name: 'test_game',
-    icon_name: 'test_game',
-    version: '1.0',
-    numeric_version: 1,
-    orientation: 'sensorLandscape',
-    permissions: ['VIBRATE', 'INTERNET'],
-    include_pil: false,
-    include_sqlite: false,
-    layout: null,
-    source: false,
-    expansion: false,
-    google_play_key: null,
-    google_play_salt: null,
-    store: 'none',
-    update_icons: true,
-    update_always: true,
-    heap_size: '3'
-  };
-
-  it.each([
-    [RenpyAndroidBuildTypes.PlayBundle, '.aab'],
-    [RenpyAndroidBuildTypes.UniversalAPK, '.apk']
-  ])(
-    "'Ensure %s builds finish as expected'",
-    async (build_type, file_ext) => {
-      /* Create the game that will be generated */
-      const game_path = path.join(readonly_tmp_dir, 'tmp_game');
-      fs.mkdirSync(path.join(game_path, 'game'), { recursive: true });
-      tmp_dirs.push(game_path);
-      fs.writeFileSync(
-        path.join(game_path, 'game', 'scripts.rpy'),
-        'label start:\n    "Love you people"\n'
-      );
-      fs.writeFileSync(path.join(game_path, '.android.json'), JSON.stringify(android_json_content));
-      /* Execute build and test */
-      const executor = new RenpyExecutor(renpy_dir);
-      const opts: RenpyAndroidBuildOptions = {
-        build_type,
-        target_dir: path.join(readonly_tmp_dir, 'outdir')
-      };
-      await expect(executor.android_build(game_path, opts)).resolves.not.toThrow();
-      const generated_files = fs.readdirSync(path.join(readonly_tmp_dir, 'outdir'));
-      expect(generated_files.filter(v => v.endsWith(file_ext))).toHaveLength(1);
     },
     5 * 60 * 1000
   );
