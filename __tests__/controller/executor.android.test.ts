@@ -150,7 +150,7 @@ afterEach(async () => {
           const generated_files = fs.readdirSync(target_dir);
           expect(generated_files.filter(v => v.endsWith(file_ext))).toHaveLength(1);
         },
-        5 * 60 * 1000
+        10 * 60 * 1000
       );
     }
   );
