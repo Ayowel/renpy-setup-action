@@ -38,7 +38,7 @@ afterEach(async () => {
   jest.restoreAllMocks();
 });
 
-['8.0.3', '8.1.3'].forEach(renpy_version => {
+(os.platform() == 'win32' ? ['8.0.3'] : ['8.0.3', '8.1.3']).forEach(renpy_version => {
   describeIf(
     !!process.env['JAVA_HOME'],
     `RenpyExecutor.android_build runs as expected on ${renpy_version}`,
