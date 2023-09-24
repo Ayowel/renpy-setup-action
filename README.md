@@ -33,14 +33,14 @@ jobs:
           path: renpy
           key: ${{ runner.os }}-renpy
       - name: Install Ren'Py
-        uses: Ayowel/renpy-setup-action@v2.0.0
+        uses: Ayowel/renpy-setup-action@v2.0.1
         if: steps.cache-renpy.outputs.cache-hit != 'true'
         with:
           action: install
           install_dir: renpy
       # Update/Replace the step below to do something different
       - name: Print help message
-        uses: Ayowel/renpy-setup-action@v2.0.0
+        uses: Ayowel/renpy-setup-action@v2.0.1
         with:
           action: exec
           install_dir: renpy
@@ -53,7 +53,7 @@ After installing, easily build release packages for multiple platforms:
 
 ```yml
 - name: Generate game distribution files
-  uses: Ayowel/renpy-setup-action@v2.0.0
+  uses: Ayowel/renpy-setup-action@v2.0.1
   with:
     action: distribute
     install_dir: renpy
@@ -65,7 +65,7 @@ After installing, easily build release packages for multiple platforms:
 Note that you may specify a file name after the package. If you do, the value of `out_dir` will be ignored for the package. Note however that the generated file will have an extension added to the path and will not match exactly the provided value:
 
 ```yml
-- uses: Ayowel/renpy-setup-action@v2.0.0
+- uses: Ayowel/renpy-setup-action@v2.0.1
   with:
     action: distribute
     install_dir: renpy
@@ -81,7 +81,7 @@ After installing Ren'py, ensure that your code does not have structural issues:
 
 ```yml
 - name: Run Ren'Py linter
-  uses: Ayowel/renpy-setup-action@v2.0.0
+  uses: Ayowel/renpy-setup-action@v2.0.1
   with:
     action: lint
     install_dir: renpy
@@ -93,7 +93,7 @@ After installing Ren'py, ensure that your code does not have structural issues:
 After installing Ren'Py, use the `translate` action to update the game's translation files:
 
 ```yml
-- uses: Ayowel/renpy-setup-action@v2.0.0
+- uses: Ayowel/renpy-setup-action@v2.0.1
   id: renpy
   with:
     action: translate
@@ -107,7 +107,7 @@ After installing Ren'Py, use the `translate` action to update the game's transla
 After installing Ren'Py, use the `nothing` action if you just want to get one of the action's outputs, such as the Python installation's path :
 
 ```yml
-- uses: Ayowel/renpy-setup-action@v2.0.0
+- uses: Ayowel/renpy-setup-action@v2.0.1
   id: renpy
   with:
     action: nothing
@@ -154,7 +154,7 @@ jobs:
         with:
           path: renpy
           key: ${{ runner.os }}-renpy
-      - uses: Ayowel/renpy-setup-action@v2.0.0
+      - uses: Ayowel/renpy-setup-action@v2.0.1
         if: steps.cache-renpy-android.outputs.cache-hit != 'true'
         with:
           action: install
@@ -167,7 +167,7 @@ jobs:
             key.alias.password=${{ secrets.ANDROID_ALIAS_PASSWORD }}
             key.store=${{ github.workspace }}/android.keystore
       # The project must have a .android.json file
-      - uses: Ayowel/renpy-setup-action@v2.0.0
+      - uses: Ayowel/renpy-setup-action@v2.0.1
         with:
           action: android_build
           install_dir: renpy
@@ -181,7 +181,7 @@ jobs:
 This action supports the following inputs:
 
 ```yml
-- uses: Ayowel/renpy-setup-action@v2.0.0
+- uses: Ayowel/renpy-setup-action@v2.0.1
   with:
     # What the action should do. Must be one of:
     # 'install', 'distribute', 'android_build',
