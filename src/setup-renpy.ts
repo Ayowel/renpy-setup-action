@@ -60,6 +60,23 @@ export async function main() {
         break;
       case RenPyInputsSupportedAction.AndroidBuild:
         logger.startGroup('Build android project files');
+        const android_config_file = path.join(opts.game_dir, '.android.json');
+        if (fs.existsSync(android_config_file)) {
+          try {
+            const android_config = JSON.parse(
+              fs.readFileSync(android_config_file, { encoding: 'utf-8' })
+            );
+            if (android_config['update_keystores'] !== false) {
+              logger.warning(
+                "The file .android.json does not set 'update_keystores' to false. It is recommended that you set this key to false to avoid build issues."
+              );
+            }
+          } catch {
+            logger.error('Failed to verify .android.json file');
+          }
+        } else {
+          logger.error('Missing file .android.json in game directory');
+        }
         await executor.android_build(opts.game_dir, opts.android_build_opts);
         logger.endGroup();
         break;

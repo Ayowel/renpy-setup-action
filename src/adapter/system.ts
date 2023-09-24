@@ -18,6 +18,7 @@ export function getRenpyPythonPath(directory: string): string {
   const ext = pickOsValue('.exe', '', '');
   const python_paths = [
     `lib/py3-${os}-x86_64/python${ext}`,
+    `lib/py3-${os}-universal/python${ext}`,
     `lib/py2-${os}-x86_64/python${ext}`,
     `lib/${os}-x86_64/python${ext}`
   ];
