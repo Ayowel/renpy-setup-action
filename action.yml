@@ -1,5 +1,5 @@
 name: "Ren'Py setup"
-description: "Install, build, and test Ren'Py games"
+description: "Install, build, and test renpy games"
 branding:
   color: blue
   icon: aperture
