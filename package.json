@@ -6,6 +6,9 @@
   "author": "Ayowel",
   "license": "MIT",
   "main": "dist/setup/index.js",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "ncc build -o dist/setup src/setup-renpy.ts",
     "format": "prettier --write \"{,!(node_modules)/**/}*.ts\"",

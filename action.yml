@@ -94,5 +94,5 @@ outputs:
   renpy_path:
     description: "The Ren'Py executable"
 runs:
-  using: "node16"
+  using: "node24"
   main: "dist/setup/index.js"
