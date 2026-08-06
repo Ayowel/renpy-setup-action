@@ -100,8 +100,9 @@ export class RenpyInstaller {
     const core_archive = await this.downloader.download_installer(this.version);
     logger.debug(`Start extraction of Ren'Py archive ${core_archive}`);
     fs.mkdirSync(this.install_dir, { recursive: true });
+    const absolute_path = fs.realpathSync(core_archive);
     // Windows and Mac tar supports zip files
-    await tc.extractTar(core_archive, this.install_dir, ['x', '--strip-components=1']);
+    await tc.extractTar(absolute_path, this.install_dir, ['x', '--strip-components=1']);
   }
 
   public async installDlc(dlc: string) {
@@ -109,7 +110,8 @@ export class RenpyInstaller {
     logger.debug(`Download dlc ${dlc}.`);
     const file = await this.downloader.download_dlc(this.version, dlc);
     logger.debug(`Extracting downloaded dlc file.`);
-    await tc.extractZip(file, this.install_dir);
+    const absolute_path = fs.realpathSync(file);
+    await tc.extractZip(absolute_path, this.install_dir);
   }
 
   public async installAndroidSdk(setupinfo: string) {

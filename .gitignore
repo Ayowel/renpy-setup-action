@@ -4,7 +4,7 @@ __tests__/runner/*
 
 # Ignore test directories
 /test_cache
-/jest-setup-renpy-*
+/test_tmp
 
 # Ignore js files that are transpiled from ts files in src/
 lib/

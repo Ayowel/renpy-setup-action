@@ -1,12 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import * as core from '@actions/core';
-import * as asystem from '../src/adapter/system';
-import { RenpyExecutor } from '../src/controller/executor';
-import { RenpyInstaller } from '../src/controller/installer';
+import { afterEach, beforeEach, describe, expect, it, jest, test } from '@jest/globals';
+import * as base_core from '@actions/core';
+
+import { initContext, createTmpDir } from './helpers/helpers';
+
 import { RenPyInputsSupportedAction } from '../src/model/parameters';
-import { main } from '../src/setup-renpy';
-import { initContext, createTmpDir } from './helpers/test_helpers.test';
 
 describe('main properly handles input parameters', () => {
   let input: { [k: string]: string } = {};
@@ -14,8 +13,58 @@ describe('main properly handles input parameters', () => {
   Object.assign(start_env, process.env);
   let tmpdir = '';
 
-  beforeEach(() => {
-    initContext();
+  beforeAll(async () => {
+    initContext((module_name, module) => {
+      if (module_name === '@actions/core') {
+        (module.getInput as jest.Mock<typeof base_core.getInput>).mockImplementation(
+          (key: string) => input[key] || ''
+        );
+        (
+          module.getMultilineInput as jest.Mock<typeof base_core.getMultilineInput>
+        ).mockImplementation((key: string) => {
+          if (input[key]) {
+            return input[key].split('\n');
+          } else {
+            return [];
+          }
+        });
+      }
+      return module;
+    });
+    const system = await import('../src/adapter/system');
+    jest.unstable_mockModule('../src/adapter/system', () => ({
+      ...system,
+      getRenpyExecPath: jest.fn(() => 'renpy_path'),
+      getRenpyPythonPath: jest.fn(() => 'python_path')
+    }));
+  });
+
+  beforeEach(async () => {
+    // initContext((module_name, module) => {
+    //   if (module_name === '@actions/core') {
+    //     (module.getInput as jest.Mock<typeof base_core.getInput>).mockImplementation((key: string) => input[key] || '');
+    //     (module.getMultilineInput as jest.Mock<typeof base_core.getMultilineInput>).mockImplementation((key: string) => {
+    //       if (input[key]) {
+    //         return input[key].split('\n');
+    //       } else {
+    //         return [];
+    //       }
+    //     });
+    //   }
+    //   return module;
+    // });
+    await import('../src/adapter/system');
+    // const core = await import('@actions/core');
+    // (core.getInput as jest.Mock<typeof core.getInput>).mockImplementation(key => input[key] || '');
+    // (core.getMultilineInput as jest.Mock<typeof core.getMultilineInput>).mockImplementation(key => {
+    //   if (input[key]) {
+    //     return input[key].split('\n');
+    //   } else {
+    //     return [];
+    //   }
+    // });
+    const { RenpyExecutor } = await import('../src/controller/executor');
+    const { RenpyInstaller } = await import('../src/controller/installer');
     tmpdir = createTmpDir();
     input = {
       action: RenPyInputsSupportedAction.Install // default value
@@ -33,18 +82,6 @@ describe('main properly handles input parameters', () => {
       fs.mkdirSync(path.join(tmpdir, 'renpy'));
       return Promise.resolve();
     });
-    jest.spyOn(asystem, 'getRenpyExecPath').mockImplementation(() => 'renpy_path');
-    jest.spyOn(asystem, 'getRenpyPythonPath').mockImplementation(() => 'python_path');
-    jest.spyOn(core, 'setOutput');
-    jest.spyOn(core, 'setFailed');
-    jest.spyOn(core, 'getInput').mockImplementation(key => input[key] || '');
-    jest.spyOn(core, 'getMultilineInput').mockImplementation(key => {
-      if (input[key]) {
-        return input[key].split('\n');
-      } else {
-        return [];
-      }
-    });
   });
   afterEach(() => {
     fs.rmSync(tmpdir, { recursive: true });
@@ -56,14 +93,16 @@ describe('main properly handles input parameters', () => {
         delete process.env[k];
       }
     }
-    jest.resetAllMocks();
+    // jest.resetAllMocks();
     jest.clearAllMocks();
-    jest.restoreAllMocks();
+    // jest.restoreAllMocks();
   });
 
   test('Main calls setFailed when an error occurs', async () => {
+    const core = await import('@actions/core');
+    const { main } = await import('../src/setup-renpy');
     input['action'] = 'unsupported_action';
-    await expect(main()).resolves.not.toThrow();
+    await expect(main).resolves.not.toThrow();
     expect(core.setFailed).toHaveBeenCalled();
   });
 
@@ -74,20 +113,26 @@ describe('main properly handles input parameters', () => {
     ['lint', RenPyInputsSupportedAction.Lint],
     ['translate', RenPyInputsSupportedAction.Translate]
   ])('main calls the right RenpyExecutor method when the action is %s', async (method, action) => {
+    const core = await import('@actions/core');
+    const { RenpyExecutor } = await import('../src/controller/executor');
+    const { main } = await import('../src/setup-renpy');
     input['action'] = action;
     input['install_dir'] = tmpdir;
     input['build_type'] = 'apk';
     input['languages'] = 'None';
-    await expect(main()).resolves.not.toThrow();
+    await expect(main).resolves.not.toThrow();
     expect(core.setFailed).not.toHaveBeenCalled();
     expect((RenpyExecutor.prototype as { [id: string]: any })[method]).toHaveBeenCalledTimes(1);
   });
 
   test('main does not call RenpyExecutor methods when the action is nothing', async () => {
+    const core = await import('@actions/core');
+    const { RenpyExecutor } = await import('../src/controller/executor');
+    const { main } = await import('../src/setup-renpy');
     input['action'] = RenPyInputsSupportedAction.Nothing;
     input['install_dir'] = tmpdir;
     input['build_type'] = 'apk';
-    await expect(main()).resolves.not.toThrow();
+    await expect(main).resolves.not.toThrow();
     expect(core.setFailed).not.toHaveBeenCalled();
     ['android_build', 'distribute', 'exec', 'lint'].forEach(m =>
       expect((RenpyExecutor.prototype as { [id: string]: any })[m]).not.toHaveBeenCalled()
@@ -95,18 +140,23 @@ describe('main properly handles input parameters', () => {
   });
 
   test('main calls RenpyInstaller.install when the action is install', async () => {
+    const core = await import('@actions/core');
+    const { RenpyInstaller } = await import('../src/controller/installer');
+    const { main } = await import('../src/setup-renpy');
     input['action'] = RenPyInputsSupportedAction.Install;
     input['install_dir'] = path.join(tmpdir, 'renpy');
-    await expect(main()).resolves.not.toThrow();
+    await expect(main).resolves.not.toThrow();
     expect(core.setFailed).not.toHaveBeenCalled();
     expect(RenpyInstaller.prototype.install).toHaveBeenCalledTimes(1);
   });
 
   test('main initializes the environment variables when java_home is provided', async () => {
+    const core = await import('@actions/core');
+    const { main } = await import('../src/setup-renpy');
     input['action'] = RenPyInputsSupportedAction.Install;
     input['install_dir'] = path.join(tmpdir, 'renpy');
     input['java_home'] = tmpdir;
-    await expect(main()).resolves.not.toThrow();
+    await expect(main).resolves.not.toThrow();
     expect(core.setFailed).not.toHaveBeenCalled();
     expect(process.env.JAVA_HOME).toBe(tmpdir);
   });

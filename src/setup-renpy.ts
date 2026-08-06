@@ -109,4 +109,9 @@ export async function main() {
   }
 }
 
-if (require.main === module) main();
+if (
+  (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) ||
+  (typeof require === 'undefined' && typeof module === 'undefined' && import.meta.main)
+) {
+  main();
+}

@@ -1,19 +1,14 @@
 import * as fs from 'fs';
-import { initContext } from '../helpers/test_helpers.test';
-import { GitHubAssetDownload } from '../../src/adapter/download/github';
-import { RenpyAssetDownload } from '../../src/adapter/download/renpy';
-import { AssetDownload, MultiAssetDownload } from '../../src/adapter/download/interface';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-jest.mock('@actions/core');
+import { initContext } from '../helpers/helpers';
 
-beforeEach(() => {
-  initContext();
-});
+import type { AssetDownload } from '../../src/adapter/download/interface';
+
+beforeEach(() => initContext());
 
 afterEach(() => {
-  jest.resetAllMocks();
   jest.clearAllMocks();
-  jest.restoreAllMocks();
 });
 
 describe('MultiAssetDownload works as intended', () => {
@@ -32,6 +27,7 @@ describe('MultiAssetDownload works as intended', () => {
     [true, [true]],
     [true, [false, true]]
   ])('has_release returns %s with %s', async (expected, provided) => {
+    const { MultiAssetDownload } = await import('../../src/adapter/download/interface');
     const acc = new MultiAssetDownload();
     for (const yesno of provided) {
       acc.add_downloader(yesno ? YesDownload : NoDownload);
@@ -43,6 +39,7 @@ describe('MultiAssetDownload works as intended', () => {
     [[true], false, 'path_to_installer'],
     [[false, true], false, 'path_to_installer']
   ])('download_installer throws with %s ? %s', async (provided, should_throw, expected) => {
+    const { MultiAssetDownload } = await import('../../src/adapter/download/interface');
     const acc = new MultiAssetDownload();
     for (const yesno of provided) {
       acc.add_downloader(yesno ? YesDownload : NoDownload);
@@ -58,6 +55,7 @@ describe('MultiAssetDownload works as intended', () => {
     [[true], false, 'path_to_dlc'],
     [[false, true], false, 'path_to_dlc']
   ])('download_installer throws with %s ? %s', async (provided, should_throw, expected) => {
+    const { MultiAssetDownload } = await import('../../src/adapter/download/interface');
     const acc = new MultiAssetDownload();
     for (const yesno of provided) {
       acc.add_downloader(yesno ? YesDownload : NoDownload);
@@ -77,8 +75,9 @@ describe('GitHubAssetDownload works as intended', () => {
     ['7', true],
     ['6', false]
   ])(
-    'has_release with release version %s returns %s',
+    'GitHubAssetDownload has_release with release version %s returns %s',
     async (version, expected) => {
+      const { GitHubAssetDownload } = await import('../../src/adapter/download/github');
       const dl = new GitHubAssetDownload();
       await expect(dl.has_release(version)).resolves.toBe(expected);
     },
@@ -90,8 +89,9 @@ describe('GitHubAssetDownload works as intended', () => {
     ['8', true],
     ['6', false]
   ])(
-    'download_installer with release version %s should work ? %s',
+    'GitHubAssetDownload download_installer with release version %s should work ? %s',
     async (version, should_succeed) => {
+      const { GitHubAssetDownload } = await import('../../src/adapter/download/github');
       const dl = new GitHubAssetDownload();
       await expect(dl.download_installer(version))[
         should_succeed ? 'resolves' : 'rejects'
@@ -105,8 +105,9 @@ describe('GitHubAssetDownload works as intended', () => {
     ['7', 'rapt', true],
     ['8', 'reniopt', false]
   ])(
-    'download_dlc with release version %s and dlc %s should work ? %s',
+    'GitHubAssetDownload download_dlc with release version %s and dlc %s should work ? %s',
     async (version, dlc, should_succeed) => {
+      const { GitHubAssetDownload } = await import('../../src/adapter/download/github');
       const dl = new GitHubAssetDownload();
       let downloaded_file = '';
       const call_dl = async () => {
@@ -129,8 +130,9 @@ describe('RenpyAssetDownload works as intended', () => {
     ['8', false], // Partial patterns not supported for the official website
     ['6.99.14.3', true]
   ])(
-    'has_release with release version %s returns %s',
+    'RenpyAssetDownload has_release with release version %s returns %s',
     async (version, expected) => {
+      const { RenpyAssetDownload } = await import('../../src/adapter/download/renpy');
       const dl = new RenpyAssetDownload();
       await expect(dl.has_release(version)).resolves.toBe(expected);
     },
@@ -142,8 +144,9 @@ describe('RenpyAssetDownload works as intended', () => {
     ['8', false],
     ['6.99.14.3', true]
   ])(
-    'download_installer with release version %s should work ? %s',
+    'RenpyAssetDownload download_installer with release version %s should work ? %s',
     async (version, should_succeed) => {
+      const { RenpyAssetDownload } = await import('../../src/adapter/download/renpy');
       const dl = new RenpyAssetDownload();
       await expect(dl.download_installer(version))[
         should_succeed ? 'resolves' : 'rejects'
@@ -157,8 +160,9 @@ describe('RenpyAssetDownload works as intended', () => {
     ['8.0.3', 'rapt', true],
     ['8.0.3', 'reniopt', false]
   ])(
-    'download_dlc with release version %s and dlc %s should work ? %s',
+    'RenpyAssetDownload download_dlc with release version %s and dlc %s should work ? %s',
     async (version, dlc, should_succeed) => {
+      const { RenpyAssetDownload } = await import('../../src/adapter/download/renpy');
       const dl = new RenpyAssetDownload();
       let downloaded_file = '';
       const call_dl = async () => {

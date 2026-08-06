@@ -1,21 +1,39 @@
 import fs from 'fs';
 import path from 'path';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+  test
+} from '@jest/globals';
 
-import { createTmpDir, describeIf, initContext } from '../helpers/test_helpers.test';
-import { RenpyExecutor } from '../../src/controller/executor';
-import { RenpyInstaller } from '../../src/controller/installer';
-import { RenpyDistributeOptions } from '../../src/model/parameters';
-import { GitHubAssetDownload } from '../../src/adapter/download/github';
+import { baselineRenpyVersion, createTmpDir, initContext } from '../helpers/helpers';
+
+import type { RenpyDistributeOptions } from '../../src/model/parameters';
 
 let readonly_tmp_dir: string;
 let renpy8_dir: string;
-beforeAll(async () => {
-  initContext();
-  readonly_tmp_dir = createTmpDir();
-  renpy8_dir = path.join(readonly_tmp_dir, 'renpy');
-  const installer = new RenpyInstaller(renpy8_dir, '8.0.3', new GitHubAssetDownload());
-  await installer.installCore();
-}, 5 * 60 * 1000);
+beforeAll(
+  async () => {
+    initContext();
+    const { RenpyInstaller } = await import('../../src/controller/installer');
+    const { GitHubAssetDownload } = await import('../../src/adapter/download/github');
+    readonly_tmp_dir = createTmpDir();
+    renpy8_dir = path.join(readonly_tmp_dir, 'renpy');
+    const installer = new RenpyInstaller(
+      renpy8_dir,
+      baselineRenpyVersion,
+      new GitHubAssetDownload()
+    );
+    await installer.installCore();
+  },
+  5 * 60 * 1000
+);
 
 beforeEach(() => initContext());
 
@@ -30,13 +48,12 @@ afterEach(async () => {
   }
   tmp_dirs = [];
 
-  jest.resetAllMocks();
   jest.clearAllMocks();
-  jest.restoreAllMocks();
 });
 
 describe('RenpyExecutor getters run as expected', () => {
-  test('RenpyExecutor.getDirectory returns the proper path', () => {
+  test('RenpyExecutor.getDirectory returns the proper path', async () => {
+    const { RenpyExecutor } = await import('../../src/controller/executor');
     const executor = new RenpyExecutor(renpy8_dir);
     expect(executor.getDirectory()).toBe(renpy8_dir);
   });
@@ -49,6 +66,7 @@ describe('RenpyExecutor.lint runs as expected', () => {
   ])(
     'Should the linter call succeed ? %s',
     async (should_resolve, script_content) => {
+      const { RenpyExecutor } = await import('../../src/controller/executor');
       const game_dir = createTmpDir();
       tmp_dirs.push(game_dir);
       fs.mkdirSync(path.join(game_dir, 'game'));
@@ -70,6 +88,7 @@ describe('RenpyExecutor.translate runs as expected', () => {
   it.each([[['french', 'english'], 'label start:\n    "Hello"']])(
     'The translation should generate data for %s',
     async (languages, script_content) => {
+      const { RenpyExecutor } = await import('../../src/controller/executor');
       const game_dir = createTmpDir();
       tmp_dirs.push(game_dir);
       fs.mkdirSync(path.join(game_dir, 'game'));
@@ -89,6 +108,7 @@ describe('RenpyExecutor.exec runs as expected', () => {
   test(
     "Ensure exec does run the Ren'Py executable",
     async () => {
+      const { RenpyExecutor } = await import('../../src/controller/executor');
       const executor = new RenpyExecutor(renpy8_dir);
       const test = executor.exec({ run: '"" --help' });
       let res: [string, string] = ['', ''];
@@ -118,6 +138,7 @@ describe('RenpyExecutor.distribute runs as expected', () => {
   test(
     'Build several packages',
     async () => {
+      const { RenpyExecutor } = await import('../../src/controller/executor');
       const target_dir = path.join(game_dir, 'target');
       const executor = new RenpyExecutor(renpy8_dir);
       const opts: RenpyDistributeOptions = {
@@ -133,6 +154,7 @@ describe('RenpyExecutor.distribute runs as expected', () => {
   test(
     'Build a package with target name',
     async () => {
+      const { RenpyExecutor } = await import('../../src/controller/executor');
       const target_dir = path.join(game_dir, 'target');
       const short_name = 'testproject';
       const executor = new RenpyExecutor(renpy8_dir);
