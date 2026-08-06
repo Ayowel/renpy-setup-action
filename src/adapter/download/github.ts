@@ -1,17 +1,26 @@
 import * as httpm from '@actions/http-client';
 import * as tc from '@actions/tool-cache';
 import { OutgoingHttpHeaders } from 'http';
-import { GitHubReleaseInfo } from '../../model/github';
+import { GitHubApiError, GitHubReleaseInfo } from '../../model/github';
 import { pickOsValue } from '../../utils';
 import { getLogger } from '../parameters';
 import { AssetDownload } from './interface';
 
 const logger = getLogger();
 
+const GITHUB_RELEASE_LIST_API_THRESHOLD = 1000;
+
 export class GitHubAssetDownload implements AssetDownload {
   protected http: httpm.HttpClient;
-  protected releases: GitHubReleaseInfo[] | undefined;
+  /** Local releases list cache to avoid re-requesting */
+  protected releases: GitHubReleaseInfo[];
+  /** Next page to reach when requesting the GitHub releases list API */
+  protected current_page: number = 1;
+  /** Number of releases to get when requesting the GitHub releases list API */
+  protected releases_per_page: number = 100;
+  /** Base URL to use when requesting the GitHub API */
   protected api_url: string;
+  /** Authentication token to use when accessing the GitHub API */
   protected auth_token: string;
 
   constructor(repo_path = '', token = '') {
@@ -21,6 +30,7 @@ export class GitHubAssetDownload implements AssetDownload {
     });
     this.api_url = `https://api.github.com/repos/${repo_path || 'renpy/renpy'}`;
     this.auth_token = token || process.env.GITHUB_TOKEN || '';
+    this.releases = [];
   }
 
   public async download_dlc(version: string, dlc: string): Promise<string> {
@@ -55,27 +65,61 @@ export class GitHubAssetDownload implements AssetDownload {
   }
 
   protected async get_release_info(version: string): Promise<GitHubReleaseInfo> {
-    let releases = await this.get_all_releases_info();
-    if (version !== 'latest') {
-      releases = releases.filter(r => r.tag_name.startsWith(version));
-      if (releases.length == 0) {
-        throw Error(`Could not find a matching release for version ${version}`);
-      }
-    }
-    return releases[0];
-  }
+    /** The resolved release's information */
+    let release: GitHubReleaseInfo | undefined = undefined;
+    /** Find a specific release in the list and return false once it does */
+    const is_release_missing = (releases: GitHubReleaseInfo[]) => {
+      release =
+        version === 'latest'
+          ? releases[0]
+          : releases.filter(r => r.tag_name.startsWith(version)).shift();
+      return release === undefined;
+    };
 
-  protected async get_all_releases_info(): Promise<GitHubReleaseInfo[]> {
-    if (!this.releases) {
-      const url = `${this.api_url}/releases`;
-      const response = await this.http.getJson<GitHubReleaseInfo[]>(
+    if (is_release_missing(this.releases)) {
+      const url = `${this.api_url}/releases/tags/${version}`;
+      const r = await this.http.getJson<GitHubReleaseInfo | GitHubApiError>(
         url,
         this.get_request_headers()
       );
-      if (!response || !response.result) {
+      if (r && r.result && 'tag_name' in r.result) {
+        this.releases.push(r.result);
+        return (release = r.result);
+      }
+      await this.get_all_releases_info(is_release_missing);
+    }
+    if (release === undefined) {
+      throw Error(`Could not find a matching release for version ${version}`);
+    }
+    return release;
+  }
+
+  protected async get_all_releases_info(
+    while_condition: (_: GitHubReleaseInfo[]) => boolean = () => true
+  ): Promise<GitHubReleaseInfo[]> {
+    let last_releases = this.releases;
+    while (
+      while_condition(last_releases) &&
+      this.releases_per_page * this.current_page < GITHUB_RELEASE_LIST_API_THRESHOLD
+    ) {
+      const url = `${this.api_url}/releases?per_page=${this.releases_per_page}&page=${this.current_page}`;
+      const response = await this.http.getJson<GitHubReleaseInfo[] | GitHubApiError>(
+        url,
+        this.get_request_headers()
+      );
+
+      if (!response || response.result === null || 'status' in response.result) {
         throw Error(`Could not retrieve releases info from ${url}`);
       }
-      this.releases = response.result.filter(release => !release.draft);
+      if (response.result.length === 0) {
+        // We've reached the end of all releases, artificially increase the current page to avoir coming back and return
+        this.current_page =
+          Math.floor(GITHUB_RELEASE_LIST_API_THRESHOLD / this.releases_per_page) + 1;
+        break;
+      }
+      last_releases = response.result.filter(release => !release.draft);
+      this.releases = this.releases.concat(last_releases);
+      this.current_page += 1;
     }
     return this.releases;
   }
