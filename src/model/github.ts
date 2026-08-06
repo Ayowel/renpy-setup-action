@@ -69,3 +69,9 @@ export type GitHubReleaseInfo = {
   body: string;
   reactions: GitHubPostReaction;
 };
+
+export type GitHubApiError = {
+  message: string;
+  documentation_url: string;
+  status: string;
+};
