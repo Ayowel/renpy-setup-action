@@ -57,9 +57,9 @@ export async function exec(
     logger.debug(`Execute command "${executable}" ${args}`);
     let child: cp.ChildProcess;
     if (typeof args !== 'string') {
-      child = cp.spawn(executable, args, opts);
+      child = cp.spawn(executable, args, { ...opts, env: { ...process.env, ...opts.env } });
     } else {
-      child = cp.exec(`${executable} ${args}`, opts);
+      child = cp.exec(`${executable} ${args}`, { ...opts, env: { ...process.env, ...opts.env } });
     }
     if (child.stdin) {
       child.stdin.end(stdin);
