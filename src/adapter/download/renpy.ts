@@ -29,6 +29,7 @@ export class RenpyAssetDownload implements AssetDownload {
       'tar.bz2',
       'zip'
     )}`;
+    logger.debug(`Download SDK from url ${sdk_url}`);
     return await tc.downloadTool(sdk_url);
   }
 
@@ -39,6 +40,7 @@ export class RenpyAssetDownload implements AssetDownload {
       throw Error(`Could not find dlc ${dlc} for Ren'Py version ${version}`);
     }
     const sdk_url = `${this.base_url}/${version}/${info[dlc].zsync_url.slice(0, -5)}zip`;
+    logger.debug(`Download SDK dlc from url ${sdk_url}`);
     return await tc.downloadTool(sdk_url);
   }
 
