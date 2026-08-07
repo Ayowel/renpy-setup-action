@@ -11,10 +11,10 @@ on:
       - 'tsconfig.json'
 
 env:
-  NODE_VERSION: 16.x
+  NODE_VERSION: 24.x
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     permissions:
@@ -22,12 +22,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           ref: develop
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -38,7 +38,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - uses: stefanzweifel/git-auto-commit-action@v7
         with:
           branch: testing
           commit_message: Build develop branch
