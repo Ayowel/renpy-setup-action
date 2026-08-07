@@ -155,11 +155,11 @@ describe('parseInputs handles GitHub input values', () => {
     const io = await import('../../src/adapter/parameters');
     const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
     input['action'] = RenPyInputsSupportedAction.Translate;
-    input['languages'] = 'french \n \t \n english';
+    input['languages'] = 'french \n \t \n english,german';
     const opts = await io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Translate);
     if (opts.action == RenPyInputsSupportedAction.Translate) {
-      expect(opts.translate_opts.languages.sort()).toEqual(['english', 'french']);
+      expect(opts.translate_opts.languages.sort()).toEqual(['english', 'french', 'german']);
     }
   });
 
