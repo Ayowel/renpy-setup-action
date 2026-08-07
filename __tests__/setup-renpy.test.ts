@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, jest, test } from '@jest/globals';
 import * as base_core from '@actions/core';
@@ -40,32 +40,10 @@ describe('main properly handles input parameters', () => {
   });
 
   beforeEach(async () => {
-    // initContext((module_name, module) => {
-    //   if (module_name === '@actions/core') {
-    //     (module.getInput as jest.Mock<typeof base_core.getInput>).mockImplementation((key: string) => input[key] || '');
-    //     (module.getMultilineInput as jest.Mock<typeof base_core.getMultilineInput>).mockImplementation((key: string) => {
-    //       if (input[key]) {
-    //         return input[key].split('\n');
-    //       } else {
-    //         return [];
-    //       }
-    //     });
-    //   }
-    //   return module;
-    // });
     await import('../src/adapter/system');
-    // const core = await import('@actions/core');
-    // (core.getInput as jest.Mock<typeof core.getInput>).mockImplementation(key => input[key] || '');
-    // (core.getMultilineInput as jest.Mock<typeof core.getMultilineInput>).mockImplementation(key => {
-    //   if (input[key]) {
-    //     return input[key].split('\n');
-    //   } else {
-    //     return [];
-    //   }
-    // });
     const { RenpyExecutor } = await import('../src/controller/executor');
     const { RenpyInstaller } = await import('../src/controller/installer');
-    tmpdir = createTmpDir();
+    tmpdir = await createTmpDir();
     input = {
       action: RenPyInputsSupportedAction.Install // default value
     };
@@ -79,12 +57,11 @@ describe('main properly handles input parameters', () => {
     jest.spyOn(RenpyExecutor.prototype, 'lint').mockImplementation(() => Promise.resolve());
     jest.spyOn(RenpyExecutor.prototype, 'translate').mockImplementation(() => Promise.resolve());
     jest.spyOn(RenpyInstaller.prototype, 'install').mockImplementation(() => {
-      fs.mkdirSync(path.join(tmpdir, 'renpy'));
-      return Promise.resolve();
+      return fs.mkdir(path.join(tmpdir, 'renpy'));
     });
   });
-  afterEach(() => {
-    fs.rmSync(tmpdir, { recursive: true });
+  afterEach(async () => {
+    await fs.rm(tmpdir, { recursive: true });
     for (const k in process.env) {
       // Regenerate env as it was before test
       if (k in start_env) {

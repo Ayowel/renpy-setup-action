@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it, jest, test } from '@jest/globals';
 
@@ -64,7 +64,7 @@ describe('parseInputs handles GitHub input values', () => {
   test('Unknown actions throw an error', async () => {
     const io = await import('../../src/adapter/parameters');
     input['action'] = 'unsupportedactionname';
-    expect(io.parseInputs).toThrow();
+    await expect(io.parseInputs).rejects.toThrow();
   });
 
   it.each([
@@ -76,7 +76,7 @@ describe('parseInputs handles GitHub input values', () => {
     const io = await import('../../src/adapter/parameters');
     const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
     input['dlc'] = input_dlc;
-    const opts = io.parseInputs();
+    const opts = await io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Install);
     if (opts.action == RenPyInputsSupportedAction.Install) {
       expect(opts.install_opts.dlc_list).toEqual(expected);
@@ -95,7 +95,7 @@ describe('parseInputs handles GitHub input values', () => {
     const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
     input['action'] = RenPyInputsSupportedAction.Distribute;
     input['packages'] = input_pkg;
-    const opts = io.parseInputs();
+    const opts = await io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Distribute);
     if (opts.action === RenPyInputsSupportedAction.Distribute) {
       expect(opts.distribute_opts.packages).toEqual(expected);
@@ -107,14 +107,14 @@ describe('parseInputs handles GitHub input values', () => {
     const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
     input['action'] = RenPyInputsSupportedAction.Distribute;
     input['packages'] = 'all path/to/all';
-    expect(io.parseInputs).toThrow();
+    await expect(io.parseInputs).rejects.toThrow();
   });
 
   test('Lint action is detected', async () => {
     const io = await import('../../src/adapter/parameters');
     const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
     input['action'] = RenPyInputsSupportedAction.Lint;
-    const opts = io.parseInputs();
+    const opts = await io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Lint);
   });
 
@@ -124,7 +124,7 @@ describe('parseInputs handles GitHub input values', () => {
       await import('../../src/model/parameters');
     input['action'] = RenPyInputsSupportedAction.AndroidBuild;
     input['build_type'] = RenpyAndroidBuildTypes.PlayBundle;
-    const opts = io.parseInputs();
+    const opts = await io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.AndroidBuild);
     if (opts.action == RenPyInputsSupportedAction.AndroidBuild) {
       expect(opts.android_build_opts.build_type).toBe(RenpyAndroidBuildTypes.PlayBundle);
@@ -136,7 +136,7 @@ describe('parseInputs handles GitHub input values', () => {
     const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
     input['action'] = RenPyInputsSupportedAction.Exec;
     input['run'] = '--help';
-    const opts = io.parseInputs();
+    const opts = await io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Exec);
     if (opts.action == RenPyInputsSupportedAction.Exec) {
       expect(opts.exec_opts.run).toBe('--help');
@@ -148,7 +148,7 @@ describe('parseInputs handles GitHub input values', () => {
     const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
     input['action'] = RenPyInputsSupportedAction.AndroidBuild;
     input['build_type'] = 'sos';
-    expect(() => io.parseInputs()).toThrow();
+    await expect(io.parseInputs()).rejects.toThrow();
   });
 
   test('Translate action is detected', async () => {
@@ -156,7 +156,7 @@ describe('parseInputs handles GitHub input values', () => {
     const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
     input['action'] = RenPyInputsSupportedAction.Translate;
     input['languages'] = 'french \n \t \n english';
-    const opts = io.parseInputs();
+    const opts = await io.parseInputs();
     expect(opts.action).toBe(RenPyInputsSupportedAction.Translate);
     if (opts.action == RenPyInputsSupportedAction.Translate) {
       expect(opts.translate_opts.languages.sort()).toEqual(['english', 'french']);
@@ -166,23 +166,23 @@ describe('parseInputs handles GitHub input values', () => {
   describe('Translate action looks up the tl directory if no language is provided', () => {
     let tmpPath = '';
 
-    beforeEach(() => {
-      tmpPath = createTmpDir();
+    beforeEach(async () => {
+      tmpPath = await createTmpDir();
     });
 
-    afterEach(() => {
-      fs.rmSync(tmpPath, { recursive: true });
+    afterEach(async () => {
+      await fs.rm(tmpPath, { recursive: true });
     });
 
     test('Translate action only picks up directories in the tl directory', async () => {
       const io = await import('../../src/adapter/parameters');
       const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
-      fs.mkdirSync(path.join(tmpPath, 'game', 'tl', 'german'), { recursive: true });
-      fs.mkdirSync(path.join(tmpPath, 'game', 'tl', 'french'));
-      fs.writeFileSync(path.join(tmpPath, 'game', 'tl', 'english'), '');
+      await fs.mkdir(path.join(tmpPath, 'game', 'tl', 'german'), { recursive: true });
+      await fs.mkdir(path.join(tmpPath, 'game', 'tl', 'french'));
+      await fs.writeFile(path.join(tmpPath, 'game', 'tl', 'english'), '');
       input['action'] = RenPyInputsSupportedAction.Translate;
       input['game'] = tmpPath;
-      const opts = io.parseInputs();
+      const opts = await io.parseInputs();
       expect(opts.action).toBe(RenPyInputsSupportedAction.Translate);
       if (opts.action == RenPyInputsSupportedAction.Translate) {
         expect(opts.translate_opts.languages.sort()).toEqual(['french', 'german']);
@@ -192,21 +192,21 @@ describe('parseInputs handles GitHub input values', () => {
     test('Translate action throws if there is no directory in tl while no language was provided', async () => {
       const io = await import('../../src/adapter/parameters');
       const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
-      fs.mkdirSync(path.join(tmpPath, 'game', 'tl'), { recursive: true });
-      fs.writeFileSync(path.join(tmpPath, 'game', 'tl', 'english'), '');
-      fs.writeFileSync(path.join(tmpPath, 'game', 'tl', 'french'), '');
+      await fs.mkdir(path.join(tmpPath, 'game', 'tl'), { recursive: true });
+      await fs.writeFile(path.join(tmpPath, 'game', 'tl', 'english'), '');
+      await fs.writeFile(path.join(tmpPath, 'game', 'tl', 'french'), '');
       input['action'] = RenPyInputsSupportedAction.Translate;
       input['game'] = tmpPath;
-      expect(() => io.parseInputs()).toThrow();
+      await expect(io.parseInputs()).rejects.toThrow();
     });
 
     test('Translate action throws if there is no tl directory while no language was provided', async () => {
       const io = await import('../../src/adapter/parameters');
       const { RenPyInputsSupportedAction } = await import('../../src/model/parameters');
-      fs.mkdirSync(path.join(tmpPath, 'game'));
+      await fs.mkdir(path.join(tmpPath, 'game'));
       input['action'] = RenPyInputsSupportedAction.Translate;
       input['game'] = tmpPath;
-      expect(() => io.parseInputs()).toThrow();
+      await expect(io.parseInputs).rejects.toThrow();
     });
   });
 });

@@ -1,12 +1,13 @@
 import { jest } from '@jest/globals';
 import * as crypto from 'crypto';
 import path from 'path';
-import fs from 'fs';
+import fs from 'fs/promises';
 // import { https } from 'follow-redirects';
 import * as base_os from 'os';
 import * as base_child_process from 'child_process';
 import * as base_actions_core from '@actions/core';
 import * as base_actions_tool_cache from '@actions/tool-cache';
+import { getCache, is_promise_resolving } from './helpers';
 
 function mock_os() {
   return jest.unstable_mockModule('os', () => ({
@@ -40,8 +41,6 @@ function mock_actions_core() {
   }));
 }
 
-const cache_dir = fs.mkdirSync('test_cache', { recursive: true }) || 'test_cache';
-
 function mock_actions_tool_cache() {
   const actions_tool_cache = jest.unstable_mockModule('@actions/tool-cache', () => ({
     ...base_actions_tool_cache,
@@ -49,22 +48,18 @@ function mock_actions_tool_cache() {
       // Use hash to ensure we differentiate between sources
       const hash = crypto.createHash('md5').update(url).digest('base64');
       const filename = url.split('/').pop() as string;
-      const cache_path = path.join(getCache(), `${hash.slice(0, 5)}-${filename}`);
-      if (!fs.existsSync(cache_path)) {
+      const cache_path = path.join(await getCache(), `${hash.slice(0, 5)}-${filename}`);
+      if (!(await is_promise_resolving(fs.access(cache_path)))) {
         await base_actions_tool_cache.downloadTool(url, cache_path);
       }
       if (dest) {
-        fs.symlinkSync(dest, cache_path);
+        await fs.symlink(dest, cache_path);
       } else {
         dest = cache_path;
       }
-      return fs.realpathSync(dest);
+      return await fs.realpath(dest);
     }
   }));
-}
-
-function getCache() {
-  return fs.mkdirSync('test_cache', { recursive: true }) || 'test_cache';
 }
 
 export { mock_actions_core, mock_actions_tool_cache, mock_child_process, mock_os };

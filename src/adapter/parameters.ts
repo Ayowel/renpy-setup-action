@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import * as core from '@actions/core';
@@ -8,10 +8,10 @@ import {
   RenPyInputsSupportedAction,
   RenpyOutputs
 } from '../model/parameters';
-import { stringToBool } from '../utils';
+import { is_promise_resolving, stringToBool } from '../utils';
 import { stringToAndroidProperties } from '../model/renpy';
 
-export function parseInputs(): RenpyInputs {
+export async function parseInputs(): Promise<RenpyInputs> {
   const logger = getLogger();
   let install_dir = core.getInput('install_dir');
 
@@ -139,13 +139,13 @@ export function parseInputs(): RenpyInputs {
         .filter(v => !!v);
       if (languages.length == 0) {
         const tl_path = path.join(opts.game_dir, 'game', 'tl');
-        if (!fs.existsSync(tl_path)) {
+        if (!(await is_promise_resolving(fs.access(tl_path)))) {
           throw Error(
             `No language was provided, but game/tl could not be found in '${opts.game_dir}' during automatic language detection.`
           );
         }
-        for (const p of fs.readdirSync(tl_path)) {
-          if (fs.statSync(path.join(tl_path, p)).isDirectory()) {
+        for (const p of await fs.readdir(tl_path)) {
+          if ((await fs.stat(path.join(tl_path, p))).isDirectory()) {
             languages.push(p);
           }
         }

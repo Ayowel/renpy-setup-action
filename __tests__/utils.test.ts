@@ -19,6 +19,22 @@ describe('utils.stringToBool properly parses strings', () => {
   });
 });
 
+describe('utils.is_promise_resolving', () => {
+  it.each(['An arbitrary value', true, false])(
+    'Resolves to true when the promise resolves with: %s',
+    async value => {
+      await expect(utils.is_promise_resolving(Promise.resolve(value))).resolves.toBe(true);
+    }
+  );
+
+  it.each(['An arbitrary value', true, false])(
+    'Resolves to false when the promise rejects with: %s',
+    async value => {
+      await expect(utils.is_promise_resolving(Promise.reject(value))).resolves.toBe(false);
+    }
+  );
+});
+
 describe('utils.pickOsValue changes its return value depending on the platform', () => {
   let current_platform: NodeJS.Platform = os.platform();
   beforeEach(() => {

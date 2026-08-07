@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { afterAll, afterEach, beforeAll, describe, expect, jest, test } from '@jest/globals';
 
@@ -11,7 +11,7 @@ beforeAll(
     initContext();
     const { RenpyInstaller } = await import('../../src/controller/installer');
     const { GitHubAssetDownload } = await import('../../src/adapter/download/github');
-    readonly_tmp_dir = createTmpDir();
+    readonly_tmp_dir = await createTmpDir();
     renpy8_dir = path.join(readonly_tmp_dir, 'renpy');
     const installer = new RenpyInstaller(
       renpy8_dir,
@@ -24,45 +24,40 @@ beforeAll(
 );
 
 afterAll(async () => {
-  fs.rmSync(readonly_tmp_dir, { recursive: true });
+  await fs.rm(readonly_tmp_dir, { recursive: true });
 });
 
 let tmp_dirs: string[] = [];
 afterEach(async () => {
-  for (const tmpdir of tmp_dirs) {
-    fs.rmSync(tmpdir, { recursive: true });
-  }
+  await Promise.all(tmp_dirs.map(tmpdir => fs.rm(tmpdir, { recursive: true })));
   tmp_dirs = [];
-
   jest.clearAllMocks();
 });
 
 describe('Renpy path getters run as expected', () => {
   test('getRenpyPythonPath resolves to a valid path', async () => {
     const { getRenpyPythonPath } = await import('../../src/adapter/system');
-    const pypath = getRenpyPythonPath(renpy8_dir);
-    expect(fs.existsSync(pypath)).toBe(true);
-    expect(fs.statSync(pypath).mode & 100).toBeTruthy();
+    const pypath = await getRenpyPythonPath(renpy8_dir);
+    await expect(fs.access(pypath, fs.constants.X_OK)).resolves.not.toThrow();
   });
 
   test('getRenpyPythonPath fails if python is not found', async () => {
     const { getRenpyPythonPath } = await import('../../src/adapter/system');
-    const fake_dir = createTmpDir();
+    const fake_dir = await createTmpDir();
     tmp_dirs.push(fake_dir);
-    expect(() => getRenpyPythonPath(fake_dir)).toThrow();
+    await expect(getRenpyPythonPath(fake_dir)).rejects.toThrow();
   });
 
   test('RenpyExecutor.getRenpyPath resolves to the right path', async () => {
     const { getRenpyExecPath } = await import('../../src/adapter/system');
-    const renpy_path = getRenpyExecPath(renpy8_dir);
-    expect(fs.existsSync(renpy_path)).toBe(true);
-    expect(fs.statSync(renpy_path).mode & 100).toBeTruthy();
+    const renpy_path = await getRenpyExecPath(renpy8_dir);
+    await expect(fs.access(renpy_path, fs.constants.X_OK)).resolves.not.toThrow();
   });
 
   test("RenpyExecutor.getRenpyPath fails if Ren'Py is not found", async () => {
     const { getRenpyExecPath } = await import('../../src/adapter/system');
-    const fake_dir = createTmpDir();
+    const fake_dir = await createTmpDir();
     tmp_dirs.push(fake_dir);
-    expect(() => getRenpyExecPath(fake_dir)).toThrow();
+    await expect(getRenpyExecPath(fake_dir)).rejects.toThrow();
   });
 });

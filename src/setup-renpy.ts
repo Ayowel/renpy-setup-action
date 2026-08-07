@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { RenpyExecutor } from './controller/executor';
@@ -7,6 +7,7 @@ import { RenpyInstaller } from './controller/installer';
 import { RenPyInputsSupportedAction, RenpyOutputs } from './model/parameters';
 import { getRenpyPythonPath, getRenpyExecPath } from './adapter/system';
 import { AssetDownloader } from './controller/downloader';
+import { is_promise_resolving } from './utils';
 
 const logger = getLogger();
 
@@ -15,7 +16,7 @@ export async function main() {
     if (!['darwin', 'win32', 'linux'].includes(os.platform())) {
       throw Error(`Unsupported platform: ${os.platform()}`);
     }
-    const opts = parseInputs();
+    const opts = await parseInputs();
     const executor = new RenpyExecutor(opts.install_dir);
 
     if (opts.java_home) {
@@ -45,7 +46,15 @@ export async function main() {
       case RenPyInputsSupportedAction.Distribute:
         logger.startGroup('Generate distribution files');
         const old_game_dir = path.join(opts.game_dir, 'old-game');
-        if (fs.existsSync(old_game_dir) && fs.readdirSync(old_game_dir).length == 0) {
+        if (
+          await fs
+            .access(old_game_dir)
+            .then(() => fs.readdir(old_game_dir))
+            .then(
+              files => files.length == 0,
+              () => false
+            )
+        ) {
           logger.error(
             `The game in ${opts.game_dir} contains an old-game dir, but it is empty. This is probably an error`
           );
@@ -61,10 +70,10 @@ export async function main() {
       case RenPyInputsSupportedAction.AndroidBuild:
         logger.startGroup('Build android project files');
         const android_config_file = path.join(opts.game_dir, '.android.json');
-        if (fs.existsSync(android_config_file)) {
+        if (await is_promise_resolving(fs.access(android_config_file))) {
           try {
             const android_config = JSON.parse(
-              fs.readFileSync(android_config_file, { encoding: 'utf-8' })
+              await fs.readFile(android_config_file, { encoding: 'utf-8' })
             );
             if (android_config['update_keystores'] !== false) {
               logger.warning(
@@ -97,11 +106,11 @@ export async function main() {
     }
 
     logger.info('Write action outputs');
-    const renpy_dir = fs.realpathSync(executor.getDirectory());
+    const renpy_dir = await fs.realpath(executor.getDirectory());
     const outputs: RenpyOutputs = {
       install_dir: renpy_dir,
-      python_path: getRenpyPythonPath(renpy_dir),
-      renpy_path: getRenpyExecPath(renpy_dir)
+      python_path: await getRenpyPythonPath(renpy_dir),
+      renpy_path: await getRenpyExecPath(renpy_dir)
     };
     writeOutputs(outputs);
   } catch (error) {

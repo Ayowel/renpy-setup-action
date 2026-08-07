@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import * as core from '@actions/core';
@@ -12,6 +12,7 @@ import {
   stringToAndroidProperties
 } from '../model/renpy';
 import { AssetDownload } from '../adapter/download/interface';
+import { is_promise_resolving } from '../utils';
 
 const logger = getLogger();
 
@@ -80,7 +81,7 @@ export class RenpyInstaller {
           opts.android_aab_properties,
           default_properties
         );
-        if (!fs.existsSync(updated_keys['key.store'])) {
+        if (!(await is_promise_resolving(fs.access(updated_keys['key.store'])))) {
           logger.warning(
             `The keystore path in ${target_pair[0]} does not appear to map to an existing keystore file (${updated_keys['key.store']}).`
           );
@@ -90,7 +91,7 @@ export class RenpyInstaller {
   }
 
   public async installCore() {
-    if (fs.existsSync(this.install_dir)) {
+    if (await is_promise_resolving(fs.access(this.install_dir))) {
       throw Error(
         `The Ren'Py install directory exists before install. This is not supported. (path: ${this.install_dir})`
       );
@@ -99,8 +100,8 @@ export class RenpyInstaller {
     logger.info("Downloading Ren'Py archive");
     const core_archive = await this.downloader.download_installer(this.version);
     logger.debug(`Start extraction of Ren'Py archive ${core_archive}`);
-    fs.mkdirSync(this.install_dir, { recursive: true });
-    const absolute_path = fs.realpathSync(core_archive);
+    await fs.mkdir(this.install_dir, { recursive: true });
+    const absolute_path = await fs.realpath(core_archive);
     // Windows and Mac tar supports zip files
     await tc.extractTar(absolute_path, this.install_dir, ['x', '--strip-components=1']);
   }
@@ -110,7 +111,7 @@ export class RenpyInstaller {
     logger.debug(`Download dlc ${dlc}.`);
     const file = await this.downloader.download_dlc(this.version, dlc);
     logger.debug(`Extracting downloaded dlc file.`);
-    const absolute_path = fs.realpathSync(file);
+    const absolute_path = await fs.realpath(file);
     await tc.extractZip(absolute_path, this.install_dir);
   }
 
@@ -134,8 +135,8 @@ export class RenpyInstaller {
     pairs: RenpyAndroidProperties,
     additional_pairs: RenpyAndroidProperties = {}
   ): Promise<RenpyAndroidProperties> {
-    const content: RenpyAndroidProperties = fs.existsSync(file)
-      ? stringToAndroidProperties(fs.readFileSync(file).toString())
+    const content: RenpyAndroidProperties = (await is_promise_resolving(fs.access(file)))
+      ? stringToAndroidProperties(await fs.readFile(file).toString())
       : {};
     for (const k in pairs) {
       content[k] = pairs[k];
@@ -145,7 +146,7 @@ export class RenpyInstaller {
         content[k] = additional_pairs[k];
       }
     }
-    fs.writeFileSync(file, androidPropertiesToString(content));
+    await fs.writeFile(file, androidPropertiesToString(content));
     return content;
   }
 }
