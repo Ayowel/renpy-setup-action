@@ -16,7 +16,7 @@
     "lint": "echo \"Fake command that does nothing. It is used in reusable workflows\"",
     "prerelease": "npm run-script build",
     "release": "git add -f dist/setup/index.js dist/setup/package.json",
-    "test": "tsc --noEmit && node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
+    "test": "tsc --noEmit && node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --json --outputFile=coverage/results.json"
   },
   "repository": {
     "type": "git",
