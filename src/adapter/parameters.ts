@@ -135,7 +135,7 @@ export async function parseInputs(): Promise<RenpyInputs> {
     case RenPyInputsSupportedAction.Translate:
       const languages = core
         .getInput('languages')
-        .split(/\s+/)
+        .split(/[\s,]+/)
         .filter(v => !!v);
       if (languages.length == 0) {
         const tl_path = path.join(opts.game_dir, 'game', 'tl');
