@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import { getLogger } from '../adapter/parameters';
@@ -41,7 +41,7 @@ export class RenpyExecutor {
       args.push('--packagedest', pkg_info[1]);
       const target_dir = path.dirname(pkg_info[1]);
       if (target_dir) {
-        fs.mkdirSync(target_dir, { recursive: true });
+        await fs.mkdir(target_dir, { recursive: true });
       }
       logger.info(`Building distribution for ${pkg_info[0]}`);
       await renpyExec(this.directory, args);

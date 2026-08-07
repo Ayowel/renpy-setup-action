@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { initContext } from '../helpers/helpers';
@@ -115,7 +115,7 @@ describe('GitHubAssetDownload works as intended', () => {
       };
       if (should_succeed) {
         await expect(call_dl()).resolves.not.toThrow();
-        expect(fs.existsSync(downloaded_file)).toBe(true);
+        await expect(fs.access(downloaded_file)).resolves.not.toThrow();
       } else {
         await expect(call_dl()).rejects.toThrow();
       }
@@ -170,7 +170,7 @@ describe('RenpyAssetDownload works as intended', () => {
       };
       if (should_succeed) {
         await expect(call_dl()).resolves.not.toThrow();
-        expect(fs.existsSync(downloaded_file)).toBe(true);
+        await expect(fs.access(downloaded_file)).resolves.not.toThrow();
       } else {
         await expect(call_dl()).rejects.toThrow();
       }

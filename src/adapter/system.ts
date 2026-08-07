@@ -1,8 +1,8 @@
 import * as cp from 'child_process';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { pickOsValue } from '../utils';
+import { is_promise_resolving, pickOsValue } from '../utils';
 import { getLogger } from './parameters';
 
 const logger = getLogger();
@@ -13,7 +13,7 @@ enum RenpyExecutableName {
   Windows = 'renpy.exe'
 }
 
-export function getRenpyPythonPath(directory: string): string {
+export async function getRenpyPythonPath(directory: string): Promise<string> {
   const os = pickOsValue('windows', 'linux', 'mac');
   const ext = pickOsValue('.exe', '', '');
   const python_paths = [
@@ -24,21 +24,21 @@ export function getRenpyPythonPath(directory: string): string {
   ];
   for (const p of python_paths) {
     const candidate_path = path.join(directory, p);
-    if (fs.existsSync(candidate_path)) {
+    if (await is_promise_resolving(fs.access(candidate_path))) {
       return candidate_path;
     }
   }
   throw Error("Failed to find Python executable in Ren'Py directory.");
 }
 
-export function getRenpyExecPath(directory: string): string {
+export async function getRenpyExecPath(directory: string): Promise<string> {
   const exec_name = pickOsValue(
     RenpyExecutableName.Windows,
     RenpyExecutableName.Linux,
     RenpyExecutableName.Mac
   );
   const renpy_path = path.join(directory, exec_name);
-  if (fs.existsSync(renpy_path)) {
+  if (await is_promise_resolving(fs.access(renpy_path))) {
     return renpy_path;
   } else {
     throw Error("Failed to find Ren'Py executable in Ren'Py directory.");
@@ -104,7 +104,7 @@ export async function renpyExec(
   renpy_dir: string,
   args: string | string[]
 ): Promise<[string, string]> {
-  return exec(getRenpyExecPath(renpy_dir), args);
+  return exec(await getRenpyExecPath(renpy_dir), args);
 }
 
 export async function renpyPythonExec(
@@ -112,5 +112,10 @@ export async function renpyPythonExec(
   args: string | string[],
   stdin = ''
 ): Promise<[string, string]> {
-  return exec(fs.realpathSync(getRenpyPythonPath(renpy_dir)), args, { cwd: renpy_dir }, stdin);
+  return exec(
+    await fs.realpath(await getRenpyPythonPath(renpy_dir)),
+    args,
+    { cwd: renpy_dir },
+    stdin
+  );
 }

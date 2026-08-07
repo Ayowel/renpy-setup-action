@@ -1,10 +1,16 @@
 import cp from 'child_process';
-import fs from 'fs';
+import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, jest } from '@jest/globals';
 
-import { baselineRenpyVersion, createTmpDir, describeIf, initContext } from '../helpers/helpers';
+import {
+  baselineRenpyVersion,
+  createTmpDir,
+  describeIf,
+  initContext,
+  is_promise_resolving
+} from '../helpers/helpers';
 
 import type {
   RenpyAndroidBuildOptions,
@@ -19,7 +25,7 @@ let tmp_dir: string;
 beforeAll(
   async () => {
     initContext();
-    tmp_dir = createTmpDir();
+    tmp_dir = await createTmpDir();
   },
   5 * 60 * 1000
 );
@@ -27,16 +33,13 @@ beforeAll(
 beforeEach(() => initContext());
 
 afterAll(async () => {
-  fs.rmSync(tmp_dir, { recursive: true });
+  await fs.rm(tmp_dir, { recursive: true });
 });
 
 let tmp_dirs: string[] = [];
 afterEach(async () => {
-  for (const tmpdir of tmp_dirs) {
-    fs.rmSync(tmpdir, { recursive: true });
-  }
+  await Promise.all(tmp_dirs.map(tmpdir => fs.rm(tmpdir, { recursive: true })));
   tmp_dirs = [];
-
   jest.clearAllMocks();
 });
 
@@ -72,7 +75,7 @@ afterEach(async () => {
           process.env.PATH = `${process.env.JAVA_HOME}/bin${path.delimiter}${process.env.PATH}`;
 
           const outpath = path.join(tmp_dir, 'outdir');
-          fs.mkdirSync(outpath);
+          await fs.mkdir(outpath);
           tmp_dirs.push(outpath);
           // Install Ren'Py with android
           const { RenpyInstaller } = await import('../../src/controller/installer');
@@ -106,8 +109,8 @@ afterEach(async () => {
         5 * 60 * 1000
       );
 
-      afterEach(() => {
-        fs.rmSync(renpy_dir, { recursive: true });
+      afterEach(async () => {
+        await fs.rm(renpy_dir, { recursive: true });
       });
 
       const android_json_content = {
@@ -141,13 +144,13 @@ afterEach(async () => {
           /* Create the game that will be generated */
           const { RenpyExecutor } = await import('../../src/controller/executor');
           const game_path = path.join(tmp_dir, `tmp_game_${build_type}`);
-          fs.mkdirSync(path.join(game_path, 'game'), { recursive: true });
+          await fs.mkdir(path.join(game_path, 'game'), { recursive: true });
           tmp_dirs.push(game_path);
-          fs.writeFileSync(
+          await fs.writeFile(
             path.join(game_path, 'game', 'scripts.rpy'),
             'label start:\n    "Love you people"\n'
           );
-          fs.writeFileSync(
+          await fs.writeFile(
             path.join(game_path, '.android.json'),
             JSON.stringify(android_json_content)
           );
@@ -156,7 +159,7 @@ afterEach(async () => {
           for (const keystore_name of ['android', 'bundle']) {
             const store_path = path.join(renpy_dir, 'rapt', `${keystore_name}.keystore`);
             const keytool_bin = os.platform() == 'win32' ? 'keytool.exe' : 'keytool';
-            if (!fs.existsSync(store_path)) {
+            if (!(await is_promise_resolving(fs.access(store_path)))) {
               const create_result = cp.spawnSync(
                 path.join(process.env['JAVA_HOME'] as string, 'bin', keytool_bin),
                 [
@@ -190,7 +193,7 @@ afterEach(async () => {
           const target_dir = path.join(tmp_dir, 'outdir');
           const opts: RenpyAndroidBuildOptions = { build_type, target_dir };
           await expect(executor.android_build(game_path, opts)).resolves.not.toThrow();
-          const generated_files = fs.readdirSync(target_dir);
+          const generated_files = await fs.readdir(target_dir);
           expect(generated_files.filter(v => v.endsWith(file_ext))).toHaveLength(1);
         },
         10 * 60 * 1000

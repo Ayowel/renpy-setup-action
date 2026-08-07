@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import {
   afterAll,
@@ -23,7 +23,7 @@ beforeAll(
     initContext();
     const { RenpyInstaller } = await import('../../src/controller/installer');
     const { GitHubAssetDownload } = await import('../../src/adapter/download/github');
-    readonly_tmp_dir = createTmpDir();
+    readonly_tmp_dir = await createTmpDir();
     renpy8_dir = path.join(readonly_tmp_dir, 'renpy');
     const installer = new RenpyInstaller(
       renpy8_dir,
@@ -38,16 +38,13 @@ beforeAll(
 beforeEach(() => initContext());
 
 afterAll(async () => {
-  fs.rmSync(readonly_tmp_dir, { recursive: true });
+  await fs.rm(readonly_tmp_dir, { recursive: true });
 });
 
 let tmp_dirs: string[] = [];
 afterEach(async () => {
-  for (const tmpdir of tmp_dirs) {
-    fs.rmSync(tmpdir, { recursive: true });
-  }
+  await Promise.all(tmp_dirs.map(tmpdir => fs.rm(tmpdir, { recursive: true })));
   tmp_dirs = [];
-
   jest.clearAllMocks();
 });
 
@@ -67,10 +64,10 @@ describe('RenpyExecutor.lint runs as expected', () => {
     'Should the linter call succeed ? %s',
     async (should_resolve, script_content) => {
       const { RenpyExecutor } = await import('../../src/controller/executor');
-      const game_dir = createTmpDir();
+      const game_dir = await createTmpDir();
       tmp_dirs.push(game_dir);
-      fs.mkdirSync(path.join(game_dir, 'game'));
-      fs.writeFileSync(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
+      await fs.mkdir(path.join(game_dir, 'game'));
+      await fs.writeFile(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
 
       const executor = new RenpyExecutor(renpy8_dir);
       const test = expect(executor.lint(game_dir, {}));
@@ -89,15 +86,15 @@ describe('RenpyExecutor.translate runs as expected', () => {
     'The translation should generate data for %s',
     async (languages, script_content) => {
       const { RenpyExecutor } = await import('../../src/controller/executor');
-      const game_dir = createTmpDir();
+      const game_dir = await createTmpDir();
       tmp_dirs.push(game_dir);
-      fs.mkdirSync(path.join(game_dir, 'game'));
-      fs.writeFileSync(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
+      await fs.mkdir(path.join(game_dir, 'game'));
+      await fs.writeFile(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
 
       const executor = new RenpyExecutor(renpy8_dir);
       await expect(executor.translate(game_dir, { languages })).resolves.not.toThrow();
       for (const language of languages) {
-        expect(fs.existsSync(path.join(game_dir, 'game', 'tl', language))).toBe(true);
+        await expect(fs.access(path.join(game_dir, 'game', 'tl', language))).resolves.not.toThrow();
       }
     },
     15 * 1000
@@ -123,16 +120,16 @@ describe('RenpyExecutor.exec runs as expected', () => {
 
 describe('RenpyExecutor.distribute runs as expected', () => {
   let game_dir: string;
-  beforeEach(() => {
-    game_dir = createTmpDir();
+  beforeEach(async () => {
+    game_dir = await createTmpDir();
     tmp_dirs.push(game_dir);
-    fs.mkdirSync(path.join(game_dir, 'game'));
+    await fs.mkdir(path.join(game_dir, 'game'));
     const script_content = [
       'define build.name = "testgame"',
       'label start:',
       '    "Hello there"'
     ].join('\n');
-    fs.writeFileSync(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
+    await fs.writeFile(path.join(game_dir, 'game', 'scripts.rpy'), script_content);
   });
 
   test(
@@ -146,7 +143,7 @@ describe('RenpyExecutor.distribute runs as expected', () => {
         target_dir
       };
       await executor.distribute(game_dir, opts);
-      expect(fs.readdirSync(target_dir).length).toBe(opts.packages.length);
+      expect((await fs.readdir(target_dir)).length).toBe(opts.packages.length);
     },
     5 * 60 * 1000
   );
@@ -163,7 +160,7 @@ describe('RenpyExecutor.distribute runs as expected', () => {
         target_dir: ''
       };
       await executor.distribute(game_dir, opts);
-      const dir_content = fs.readdirSync(target_dir);
+      const dir_content = await fs.readdir(target_dir);
       expect(dir_content.length).toBe(1);
       expect(path.basename(dir_content[0]).startsWith(short_name)).toBeTruthy();
     },

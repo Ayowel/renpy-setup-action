@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
@@ -9,12 +9,12 @@ import type { RenpyInstallerOptions } from '../../src/model/parameters';
 let tmpdir = '';
 
 beforeEach(async () => {
-  tmpdir = createTmpDir();
+  tmpdir = await createTmpDir();
   initContext();
 });
 
 afterEach(async () => {
-  fs.rmSync(tmpdir, { recursive: true });
+  await fs.rm(tmpdir, { recursive: true });
 
   jest.clearAllMocks();
 });
@@ -39,7 +39,7 @@ describe('isInstallWorking', () => {
         version
       };
       await expect(installer.install(opts)).resolves.not.toThrow();
-      expect(fs.existsSync(renpy_dir)).toBeTruthy();
+      await expect(fs.access(renpy_dir)).resolves.not.toThrow();
     },
     3 * 60 * 1000
   );
@@ -66,9 +66,11 @@ describe('isDlcInstallWorking', () => {
       const installer = new RenpyInstaller(renpy_dir, renpy_version, new GitHubAssetDownload());
       await expect(installer.install(opts)).resolves.not.toThrow();
       const location = renpy_dir;
-      for (const filepath of expect_files) {
-        expect(fs.existsSync(path.join(location, filepath))).toBeTruthy();
-      }
+      await Promise.all(
+        expect_files.map(filepath =>
+          expect(fs.access(path.join(location, filepath))).resolves.not.toThrow()
+        )
+      );
     },
     3 * 60 * 1000
   );
@@ -117,10 +119,12 @@ describe('isDlcInstallWorking', () => {
         const installer = new RenpyInstaller(renpy_dir, renpy_version, new RenpyAssetDownload());
         await expect(installer.install(opts)).resolves.not.toThrow();
         const location = renpy_dir;
-        for (const filepath of expect_files) {
-          expect(fs.existsSync(path.join(location, filepath))).toBeTruthy();
-        }
-        const bundle_content = fs.readFileSync(
+        await Promise.all(
+          expect_files.map(filepath =>
+            expect(fs.access(path.join(location, filepath))).resolves.not.toThrow()
+          )
+        );
+        const bundle_content = await fs.readFile(
           path.join(location, 'rapt', 'project', 'bundle.properties')
         );
         const bundle_lines = bundle_content.toString().split('\n');
