@@ -38,10 +38,10 @@ export function initContext(modifier: (module_name: string, module: any) => any 
       ...tc,
       downloadTool: jest.fn(async (url: string, dest: string | undefined) => {
         // Use hash to ensure we differentiate between sources
-        console.debug(`Tool download request for ${url}`);
-        const hash = crypto.createHash('md5').update(url).digest('base64');
+        const hash = crypto.createHash('md5').update(url).digest('base64').slice(0, 5);
+        console.debug(`Tool download request for ${url} (hash5: ${hash})`);
         const filename = url.split('/').pop() as string;
-        const cache_path = path.join(await getCache(), `${hash.slice(0, 5)}-${filename}`);
+        const cache_path = path.join(await getCache(), `${hash}-${filename}`);
         if (!(await is_promise_resolving(fs.access(cache_path)))) {
           console.debug(`Downloading tool from ${url}`);
           await tcDownloadTool(url, cache_path);
