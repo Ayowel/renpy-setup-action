@@ -28,7 +28,7 @@ function build_cache_key(opt: RenpyInputs) {
   const version = opt.install_opts.version.slice(0, 20);
   const dlcs = opt.install_opts.dlc_list.join('_').slice(0, 40);
   const conf_hash = crypto.createHash('md5').update(conf_string).digest('base64');
-  core.debug(`Building cache key ${conf_hash} from string:\n${conf_string}`);
+  core.debug(`Built cache key ${conf_hash} from inputs`);
   return `Renpy-${platform}-${version}-${dlcs}-${conf_hash.slice(0, 6)}`;
 }
 
