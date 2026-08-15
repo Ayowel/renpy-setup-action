@@ -57,6 +57,12 @@ inputs:
   cdn_url:
     description: "The CDN that hosts Ren'Py releases"
     required: false
+  cache_strategy:
+    description: The caching strategy to use
+    default: all
+  cache_key:
+    description: "The key to use when caching data"
+    required: false
   # All non-install actions
   game:
     description: "Path to the game's directory"
