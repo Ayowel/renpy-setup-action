@@ -5,7 +5,7 @@ import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
 import { getLogger } from '../adapter/parameters';
 import { renpyPythonExec } from '../adapter/system';
-import { RenpyInstallerOptions } from '../model/parameters';
+import { RenpyInstallerOptions, RenpyInstallOutputs } from '../model/parameters';
 import {
   RenpyAndroidProperties,
   androidPropertiesToString,
@@ -27,7 +27,12 @@ export class RenpyInstaller {
     this.downloader = downloader;
   }
 
-  public async install(opts: RenpyInstallerOptions) {
+  public async install(opts: RenpyInstallerOptions): Promise<RenpyInstallOutputs> {
+    const outputs: RenpyInstallOutputs = {
+      cache_key: opts.cache_key,
+      cache_hit: false,
+      cache_save: false
+    };
     logger.info(`Installing Ren'Py version ${opts.version}`);
     await this.installCore();
     if (opts.dlc_list.length > 0) {
@@ -88,6 +93,8 @@ export class RenpyInstaller {
         }
       }
     }
+
+    return outputs;
   }
 
   public async installCore() {

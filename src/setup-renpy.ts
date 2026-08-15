@@ -4,7 +4,7 @@ import * as os from 'os';
 import { RenpyExecutor } from './controller/executor';
 import { getLogger, parseInputs, writeOutputs, fail } from './adapter/parameters';
 import { RenpyInstaller } from './controller/installer';
-import { RenPyInputsSupportedAction, RenpyOutputs } from './model/parameters';
+import { RenPyInputsSupportedAction, RenpyInstallOutputs, RenpyOutputs } from './model/parameters';
 import { getRenpyPythonPath, getRenpyExecPath } from './adapter/system';
 import { AssetDownloader } from './controller/downloader';
 import { is_promise_resolving } from './utils';
@@ -18,6 +18,7 @@ export async function main() {
     }
     const opts = await parseInputs();
     const executor = new RenpyExecutor(opts.install_dir);
+    let install_outputs: RenpyInstallOutputs = {};
 
     if (opts.java_home) {
       /*
@@ -40,7 +41,7 @@ export async function main() {
           opts.install_opts.version,
           downloader
         );
-        await installer.install(opts.install_opts);
+        install_outputs = await installer.install(opts.install_opts);
         logger.endGroup();
         break;
       case RenPyInputsSupportedAction.Distribute:
@@ -110,7 +111,8 @@ export async function main() {
     const outputs: RenpyOutputs = {
       install_dir: renpy_dir,
       python_path: await getRenpyPythonPath(renpy_dir),
-      renpy_path: await getRenpyExecPath(renpy_dir)
+      renpy_path: await getRenpyExecPath(renpy_dir),
+      ...install_outputs
     };
     writeOutputs(outputs);
   } catch (error) {

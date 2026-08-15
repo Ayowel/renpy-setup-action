@@ -99,6 +99,12 @@ outputs:
     description: "The Python executable provided by Ren'Py"
   renpy_path:
     description: "The Ren'Py executable"
+  cache_hit:
+    description: "When installing, wether a cached Ren'Py install was found"
+  cache_save:
+    description: "When installing, wether the Ren'Py install was saved to cache"
+  cache_key:
+    description: "When installing, the key used to save the Ren'Py install to cache"
 runs:
   using: "node24"
   main: "dist/setup/index.js"
