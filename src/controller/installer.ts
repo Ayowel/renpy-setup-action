@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import * as core from '@actions/core';
+import * as cache from '@actions/cache';
 import * as tc from '@actions/tool-cache';
 import { getLogger } from '../adapter/parameters';
 import { renpyPythonExec } from '../adapter/system';
@@ -34,64 +35,88 @@ export class RenpyInstaller {
       cache_save: false
     };
     logger.info(`Installing Ren'Py version ${opts.version}`);
-    await this.installCore();
-    if (opts.dlc_list.length > 0) {
-      logger.info('Install DLCs');
-      for (const dlc of opts.dlc_list) {
-        logger.info(`Installing DLC ${dlc}.`);
-        await this.installDlc(dlc);
+    let cache_hit = false;
+    if (opts.cache_load) {
+      core.debug(`Attempting to restore cache at ${this.install_dir} with ${opts.cache_key}`);
+      const cache_hit_key = await cache.restoreCache([this.install_dir], opts.cache_key);
+      cache_hit = cache_hit_key !== undefined;
+      if (cache_hit) {
+        core.info(`Loading Ren'Py in ${this.install_dir} from cache.`);
+      } else {
+        core.info(`No cache found for Ren'Py, proceeding with regular install`);
       }
-    } else {
-      logger.debug('No DLC to install.');
+      outputs.cache_hit = cache_hit;
     }
+    if (!cache_hit) {
+      await this.installCore();
+      if (opts.dlc_list.length > 0) {
+        logger.info('Install DLCs');
+        for (const dlc of opts.dlc_list) {
+          logger.info(`Installing DLC ${dlc}.`);
+          await this.installDlc(dlc);
+        }
+      } else {
+        logger.debug('No DLC to install.');
+      }
 
-    if (opts.live2d_url) {
-      logger.info('Install Live2D');
-      logger.error('Live2D is not supported yet.');
-    } else {
-      logger.debug('No configured Live2D source');
+      if (opts.live2d_url) {
+        logger.info('Install Live2D');
+        logger.error('Live2D is not supported yet.');
+      } else {
+        logger.debug('No configured Live2D source');
+      }
+
+      if (opts.android_sdk) {
+        logger.info('Install Android SDK');
+        const sdk_input =
+          opts.android_sdk_install_input ||
+          `y\ny\n${opts.android_sdk_owner}\ny\ny\n${opts.android_sdk_owner}\ny\n`;
+        await this.installAndroidSdk(sdk_input);
+        logger.info('Configure Android SDK build properties');
+        const project_path = path.join(this.install_dir, 'rapt', 'project');
+
+        for (const target_pair of [
+          ['bundle', 'bundle'],
+          ['local', 'android']
+        ]) {
+          const default_properties = {
+            // Sets the default key values if none is set
+            'key.alias': 'android',
+            'key.store.password': 'android',
+            'key.alias.password': 'android',
+            'key.store': path.join(
+              path.resolve(this.install_dir),
+              'rapt',
+              `${target_pair[1]}.keystore`
+            ),
+            'sdk.dir': path.join(path.resolve(this.install_dir), 'rapt', 'Sdk')
+          };
+          const updated_keys = await this.updateKeyValueConfig(
+            path.join(project_path, `${target_pair[0]}.properties`),
+            opts.android_aab_properties,
+            default_properties
+          );
+          if (!(await is_promise_resolving(fs.access(updated_keys['key.store'])))) {
+            logger.warning(
+              `The keystore path in ${target_pair[0]} does not appear to map to an existing keystore file (${updated_keys['key.store']}).`
+            );
+          }
+        }
+      }
+      if (opts.cache_save) {
+        core.debug(`Attempting to save cache at ${this.install_dir} with ${opts.cache_key}`);
+        const cache_id = await cache.saveCache([this.install_dir], opts.cache_key);
+        if (cache_id != -1) {
+          core.info(`Saved Ren'Py in ${this.install_dir} to cache ${opts.cache_key}.`);
+        } else {
+          core.info(`Failed to save Ren'Py to cache`);
+        }
+        outputs.cache_save = cache_id != -1;
+      }
     }
 
     if (opts.update_path) {
       core.addPath(this.install_dir);
-    }
-
-    if (opts.android_sdk) {
-      logger.info('Install Android SDK');
-      const sdk_input =
-        opts.android_sdk_install_input ||
-        `y\ny\n${opts.android_sdk_owner}\ny\ny\n${opts.android_sdk_owner}\ny\n`;
-      await this.installAndroidSdk(sdk_input);
-      logger.info('Configure Android SDK build properties');
-      const project_path = path.join(this.install_dir, 'rapt', 'project');
-
-      for (const target_pair of [
-        ['bundle', 'bundle'],
-        ['local', 'android']
-      ]) {
-        const default_properties = {
-          // Sets the default key values if none is set
-          'key.alias': 'android',
-          'key.store.password': 'android',
-          'key.alias.password': 'android',
-          'key.store': path.join(
-            path.resolve(this.install_dir),
-            'rapt',
-            `${target_pair[1]}.keystore`
-          ),
-          'sdk.dir': path.join(path.resolve(this.install_dir), 'rapt', 'Sdk')
-        };
-        const updated_keys = await this.updateKeyValueConfig(
-          path.join(project_path, `${target_pair[0]}.properties`),
-          opts.android_aab_properties,
-          default_properties
-        );
-        if (!(await is_promise_resolving(fs.access(updated_keys['key.store'])))) {
-          logger.warning(
-            `The keystore path in ${target_pair[0]} does not appear to map to an existing keystore file (${updated_keys['key.store']}).`
-          );
-        }
-      }
     }
 
     return outputs;
