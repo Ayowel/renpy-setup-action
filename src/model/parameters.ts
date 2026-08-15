@@ -112,7 +112,13 @@ export interface RenpyTranslateOptions {
 
 /* Output values */
 
-export interface RenpyOutputs {
+export interface RenpyInstallOutputs {
+  cache_hit?: boolean;
+  cache_save?: boolean;
+  cache_key?: string;
+}
+
+export interface RenpyOutputs extends RenpyInstallOutputs {
   install_dir: string;
   python_path: string;
   renpy_path: string;
