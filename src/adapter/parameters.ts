@@ -24,12 +24,12 @@ function build_cache_key(opt: RenpyInputs) {
     .sort()
     .join('\n');
 
-  const platform = os.platform()[0].toUpperCase + os.platform().slice(1);
+  const platform = os.platform()[0].toUpperCase() + os.platform().slice(1);
   const version = opt.install_opts.version.slice(0, 20);
   const dlcs = opt.install_opts.dlc_list.join('_').slice(0, 40);
   const conf_hash = crypto.createHash('md5').update(conf_string).digest('base64');
   core.debug(`Building cache key ${conf_hash} from string:\n${conf_string}`);
-  return `${platform}-Renpy-${version}-${dlcs}-${conf_hash.slice(0, 6)}`;
+  return `Renpy-${platform}-${version}-${dlcs}-${conf_hash.slice(0, 6)}`;
 }
 
 export async function parseInputs(): Promise<RenpyInputs> {
