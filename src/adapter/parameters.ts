@@ -19,8 +19,8 @@ function build_cache_key(opt: RenpyInputs) {
 
   const conf_string = Object.entries(opt.install_opts)
     .concat(Object.entries(opt.downloader_opts))
-    .filter(([k, v]) => !!v && !k.startsWith('cache_'))
-    .map(([k, v]) => `${k}=${v}`)
+    .filter(([k, v]) => !!v && !k.startsWith('cache_') && k != 'github_token')
+    .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
     .sort()
     .join('\n');
 
