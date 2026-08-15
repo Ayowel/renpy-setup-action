@@ -36,7 +36,10 @@ describe('isInstallWorking', () => {
         dlc_list: [],
         live2d_url: '',
         update_path: false,
-        version
+        version,
+        cache_load: false,
+        cache_save: false,
+        cache_key: ''
       };
       await expect(installer.install(opts)).resolves.not.toThrow();
       await expect(fs.access(renpy_dir)).resolves.not.toThrow();
@@ -61,7 +64,10 @@ describe('isDlcInstallWorking', () => {
         dlc_list: dlcs,
         live2d_url: '',
         update_path: false,
-        version: renpy_version
+        version: renpy_version,
+        cache_load: false,
+        cache_save: false,
+        cache_key: ''
       };
       const installer = new RenpyInstaller(renpy_dir, renpy_version, new GitHubAssetDownload());
       await expect(installer.install(opts)).resolves.not.toThrow();
@@ -114,7 +120,10 @@ describe('isDlcInstallWorking', () => {
           dlc_list: ['rapt'],
           live2d_url: '',
           update_path: false,
-          version: renpy_version
+          version: renpy_version,
+          cache_load: false,
+          cache_save: false,
+          cache_key: ''
         };
         const installer = new RenpyInstaller(renpy_dir, renpy_version, new RenpyAssetDownload());
         await expect(installer.install(opts)).resolves.not.toThrow();

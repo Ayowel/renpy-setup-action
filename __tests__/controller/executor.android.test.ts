@@ -91,7 +91,10 @@ afterEach(async () => {
             dlc_list: ['rapt'],
             live2d_url: '',
             update_path: false,
-            version: renpy_version
+            version: renpy_version,
+            cache_load: false,
+            cache_save: false,
+            cache_key: ''
           };
           const downloader_config: RenpyAssetDownloaderOptions = {
             use_github: true,

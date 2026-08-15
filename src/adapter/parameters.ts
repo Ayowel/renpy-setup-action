@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import * as core from '@actions/core';
 import {
   RenpyAndroidBuildTypes,
@@ -10,6 +11,26 @@ import {
 } from '../model/parameters';
 import { is_promise_resolving, stringToBool } from '../utils';
 import { stringToAndroidProperties } from '../model/renpy';
+
+function build_cache_key(opt: RenpyInputs) {
+  if (opt.action != 'install') {
+    throw new Error('Attempting to build cache key from non-install input');
+  }
+
+  const conf_string = Object.entries(opt.install_opts)
+    .concat(Object.entries(opt.downloader_opts))
+    .filter(([k, v]) => !!v && !k.startsWith('cache_'))
+    .map(([k, v]) => `${k}=${v}`)
+    .sort()
+    .join('\n');
+
+  const platform = os.platform()[0].toUpperCase + os.platform().slice(1);
+  const version = opt.install_opts.version.slice(0, 20);
+  const dlcs = opt.install_opts.dlc_list.join('_').slice(0, 40);
+  const conf_hash = crypto.createHash('md5').update(conf_string).digest('base64');
+  core.debug(`Building cache key ${conf_hash} from string:\n${conf_string}`);
+  return `${platform}-Renpy-${version}-${dlcs}-${conf_hash.slice(0, 6)}`;
+}
 
 export async function parseInputs(): Promise<RenpyInputs> {
   const logger = getLogger();
@@ -44,7 +65,10 @@ export async function parseInputs(): Promise<RenpyInputs> {
           ),
           android_apk_properties: stringToAndroidProperties(
             core.getInput('android_apk_properties') || core.getInput('android_properties')
-          )
+          ),
+          cache_save: ['all', 'save'].includes(core.getInput('cache_strategy') || 'all'),
+          cache_load: ['all', 'load'].includes(core.getInput('cache_strategy') || 'all'),
+          cache_key: core.getInput('cache_key')
         },
         downloader_opts: {
           use_github: stringToBool(core.getInput('use_github_releases'), true),
@@ -54,6 +78,9 @@ export async function parseInputs(): Promise<RenpyInputs> {
           cdn_base_url: core.getInput('cdn_url')
         }
       };
+      if (!opts.install_opts.cache_key) {
+        opts.install_opts.cache_key = build_cache_key(opts);
+      }
       const iopts = opts.install_opts;
       if (iopts.android_sdk && !iopts.dlc_list.includes('rapt')) {
         logger.warning(

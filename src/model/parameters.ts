@@ -82,6 +82,9 @@ export interface RenpyInstallerOptions {
   android_sdk: boolean;
   android_sdk_owner: string;
   android_sdk_install_input: string;
+  cache_load: boolean;
+  cache_save: boolean;
+  cache_key: string;
 }
 
 export interface RenpyAssetDownloaderOptions {
