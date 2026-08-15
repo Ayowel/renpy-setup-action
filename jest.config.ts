@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   clearMocks: true,
   collectCoverageFrom: ['src/*.ts', 'src/**/*.ts'],
   coverageDirectory: 'coverage',

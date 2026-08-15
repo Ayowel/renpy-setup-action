@@ -5,12 +5,13 @@
   "description": "Setup renpy action",
   "author": "Ayowel",
   "license": "MIT",
+  "type": "module",
   "main": "dist/setup/index.js",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "build": "ncc build -o dist/setup src/setup-renpy.ts",
+    "build": "ncc build -o dist/setup src/main.ts",
     "format": "prettier --write \"{,!(node_modules)/**/}*.ts\"",
     "format-check": "prettier --check \"{,!(node_modules)/**/}*.ts\"",
     "lint": "echo \"Fake command that does nothing. It is used in reusable workflows\"",

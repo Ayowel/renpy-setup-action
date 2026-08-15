@@ -119,10 +119,3 @@ export async function main() {
     fail(error as Error);
   }
 }
-
-if (
-  (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) ||
-  (typeof require === 'undefined' && typeof module === 'undefined' && import.meta.main)
-) {
-  main();
-}
