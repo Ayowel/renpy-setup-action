@@ -1,6 +1,6 @@
 {
   "name": "setup-renpy",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "private": true,
   "description": "Setup renpy action",
   "author": "Ayowel",
@@ -45,5 +45,8 @@
     "ts-jest": "^29.4.11",
     "typescript": "^6.0.3",
     "yauzl": "^3.4.0"
+  },
+  "allowScripts": {
+    "unrs-resolver": false
   }
 }
