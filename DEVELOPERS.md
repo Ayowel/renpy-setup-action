@@ -54,6 +54,7 @@ Notes on tests:
 
 * Some tests use Github's API and may quickly reach the unauthenticated API usage limit. Set the `GITHUB_TOKEN` environment variable to use your own token and circumvent this limitation. The token does not need any specific permission.
 * Android tests use the host's Java installation. Set the `JAVA_HOME8` and `JAVA_HOME21` environment variables to the corresponding Java JDK installations or unset them to skip all android-related tests.
+* Due to the execution verbosity, identifying failed tests may be difficult. In such cases, you may use `jq` or any similar tool to parse the report file and list them: `jq -r '.testResults[].assertionResults[]|select(.status!="passed").fullName' <coverage/results.json`
 
 ## Contribute
 
