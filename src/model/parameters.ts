@@ -75,7 +75,8 @@ export interface RenpyAndroidBuildOptions {
 export interface RenpyInstallerOptions {
   version: string;
   dlc_list: string[];
-  live2d_url: string;
+  live2d_native: string;
+  live2d_web: string;
   update_path: boolean;
   android_aab_properties: RenpyAndroidProperties;
   android_apk_properties: RenpyAndroidProperties;

@@ -32,8 +32,11 @@ inputs:
   dlc:
     description: "List of dlcs to install"
     required: false
-  live2d:
-    description: "Live2D url of the file to install (Live2D won't be installed if this is not set)"
+  live2d_native:
+    description: "Live2D url or path of the file to install"
+    required: false
+  live2d_web:
+    description: "Live2D url or path of the file to install"
     required: false
   update_path:
     description: "Whether the install directory should be added to the PATH"

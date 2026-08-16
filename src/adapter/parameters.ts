@@ -55,7 +55,8 @@ export async function parseInputs(): Promise<RenpyInputs> {
             .split(/,|\s+/)
             .map(v => v.trim())
             .filter(s => !!s),
-          live2d_url: core.getInput('live2d'),
+          live2d_native: core.getInput('live2d_native'),
+          live2d_web: core.getInput('live2d_web'),
           update_path: stringToBool(core.getInput('update_path'), false),
           android_sdk: stringToBool(core.getInput('android_sdk'), false),
           android_sdk_owner: core.getInput('android_sdk_owner'),
