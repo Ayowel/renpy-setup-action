@@ -1,4 +1,4 @@
-# Ren'Py installer
+# Ren'Py setup - install, lint, distribute, and more
 
 [![License](https://img.shields.io/github/license/Ayowel/renpy-setup-action)](https://github.com/Ayowel/renpy-setup-action/blob/master/LICENSE)
 [![Latest version](https://img.shields.io/github/v/tag/Ayowel/renpy-setup-action)](https://www.github.com/Ayowel/renpy-setup-action/releases/latest)
@@ -6,74 +6,65 @@
 
 This action installs Ren'Py with DLCs and modules and allows you to perform simple actions on your code with it.
 
+**Notable changes in V3**:
+
+* Native cache support, no need to add save/restore steps anymore (Set `cache_strategy` to `none` to restore the old behavior)
+* Added support for Live2D SDK install
+
 ## Usage
 
 ### Basic usage
 
 Install Ren'Py then execute a command of your choosing.
-In this example, we use the `exec` action to show Ren'Py's help message after installing:
+In this example, we lint the project everytime code is pushed to the repository:
 
 ```yml
-# .github/workflows/help.yml
-name: Get Ren'Py's help message
+# .github/workflows/lint.yml
+name: Lint the Ren'Py project
 on:
-  workflow_dispatch:
+  push:
 
 jobs:
   lint:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          path: project
-      - uses: actions/cache@v3
-        id: cache-renpy
-        with:
-          path: renpy
-          key: ${{ runner.os }}-renpy
+      - uses: actions/checkout@v7
       - name: Install Ren'Py
-        uses: Ayowel/renpy-setup-action@v2.0.1
-        if: steps.cache-renpy.outputs.cache-hit != 'true'
+        uses: Ayowel/renpy-setup-action@v3
         with:
           action: install
-          install_dir: renpy
       # Update/Replace the step below to do something different
-      - name: Print help message
-        uses: Ayowel/renpy-setup-action@v2.0.1
+      - name: Lint the game
+        uses: Ayowel/renpy-setup-action@v3
         with:
-          action: exec
-          install_dir: renpy
-          run: --help
+          action: lint
 ```
 
 ### Distribute release packages
 
-After installing, easily build release packages for multiple platforms:
+After installing, easily build release packages for multiple platforms by providing a comma- or newline-separated list of packages:
 
 ```yml
 - name: Generate game distribution files
-  uses: Ayowel/renpy-setup-action@v2.0.1
+  uses: Ayowel/renpy-setup-action@v3
   with:
     action: distribute
-    install_dir: renpy
-    game: project
     packages: linux, win
-    out_dir: target
+    out_dir: /tmp/target
 ```
 
-Note that you may specify a file name after the package. If you do, the value of `out_dir` will be ignored for the package. Note however that the generated file will have an extension added to the path and will not match exactly the provided value:
+Note that you may specify a file name after the package (except for the special package `all`). If you do, the value of `out_dir` will be ignored for the package and the provided file name will be used instead:
 
 ```yml
-- uses: Ayowel/renpy-setup-action@v2.0.1
+# Create linux-target/distrib_linux.tar.bz2, /tmp/target/gamename-pc.zip, and /tmp/target/gamename-mac.zip
+- uses: Ayowel/renpy-setup-action@v3
   with:
     action: distribute
-    install_dir: renpy
-    game: project
     packages: |
-      linux linux-target/distrib_linux
+      linux /tmp/linux-target/distrib_linux
       win, mac
-    out_dir: target
+    out_dir: /tmp/target
 ```
 ### Lint project
 
@@ -81,11 +72,9 @@ After installing Ren'py, ensure that your code does not have structural issues:
 
 ```yml
 - name: Run Ren'Py linter
-  uses: Ayowel/renpy-setup-action@v2.0.1
+  uses: Ayowel/renpy-setup-action@v3
   with:
     action: lint
-    install_dir: renpy
-    game: project
 ```
 
 ### Update the game's translation
@@ -93,12 +82,10 @@ After installing Ren'py, ensure that your code does not have structural issues:
 After installing Ren'Py, use the `translate` action to update the game's translation files:
 
 ```yml
-- uses: Ayowel/renpy-setup-action@v2.0.1
+- uses: Ayowel/renpy-setup-action@v3
   id: renpy
   with:
     action: translate
-    install_dir: renpy
-    game: project
     languages: french english
 ```
 
@@ -107,11 +94,10 @@ After installing Ren'Py, use the `translate` action to update the game's transla
 After installing Ren'Py, use the `nothing` action if you just want to get one of the action's outputs, such as the Python installation's path :
 
 ```yml
-- uses: Ayowel/renpy-setup-action@v2.0.1
+- uses: Ayowel/renpy-setup-action@v3
   id: renpy
   with:
     action: nothing
-    install_dir: renpy
 - name: Display Ren'Py's Python version
   run: ${{ steps.renpy.outputs.python_path }} --version
 ```
@@ -138,27 +124,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
         with:
-          path: project
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'adopt-hotspot'
-          java-version: '8'
+          distribution: 'temurin'
+          java-version: '21'
       - name: Create keystore
         run: base64 -d <<<"$ANDROID_KEYSTORE" >android.keystore
         env:
           ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-      - uses: actions/cache@v3
-        id: cache-renpy-android
-        with:
-          path: renpy
-          key: ${{ runner.os }}-renpy
-      - uses: Ayowel/renpy-setup-action@v2.0.1
-        if: steps.cache-renpy-android.outputs.cache-hit != 'true'
+      - uses: Ayowel/renpy-setup-action@v3
         with:
           action: install
-          install_dir: renpy
           dlc: rapt
           android_sdk: true
           android_properties: |
@@ -167,94 +144,101 @@ jobs:
             key.alias.password=${{ secrets.ANDROID_ALIAS_PASSWORD }}
             key.store=${{ github.workspace }}/android.keystore
       # The project must have a .android.json file
-      - uses: Ayowel/renpy-setup-action@v2.0.1
+      - uses: Ayowel/renpy-setup-action@v3
         with:
           action: android_build
-          install_dir: renpy
           build_type: apk
-          game: project
           out_dir: target
 ```
 
 ## Inputs
 
-This action supports the following inputs:
+### Generic inputs
 
-```yml
-- uses: Ayowel/renpy-setup-action@v2.0.1
-  with:
-    # What the action should do. Must be one of:
-    # 'install', 'distribute', 'android_build',
-    # 'lint', 'exec', 'translate', and 'nothing'
-    action: install
-    # Directory where Ren'Py is/will be installed.
-    # The directory may not exist if the action is install.
-    # If the directory does not exist and the action is not
-    # 'install', Ren'Py will be installed before running
-    # the action.
-    install_dir: ~/.renpy_exec
-    # Directory of the Ren'Py game
-    game: .
-    # Where the Java 8 SDK is located
-    java_home:
+The following inputs are supported in all cases:
 
-    ### INSTALL INPUTS ###
-    # Comma/space-separated list of Ren'Py DLCs to install
-    dlc: steam
-    # Path to a live2d release to install.
-    # This option is not supported yet.
-    live2d: https://cubism.live2d.com/sdk-native/bin/CubismSdkForNative-4-r.5.1.zip
-    # Whether Ren'Py's directory should be added to the PATH
-    update_path: false
-    # Ren'Py version to install. Defaults to the latest GitHub Release
-    version: latest
-    ## Android install inputs
-    # Whether to install the Android SDK
-    android_sdk: false
-    # Input for the SDK installation process - this should not be used in most cases
-    android_sdk_install_input:
-    # If android_sdk_install_input is not provided, what company name to use when installing the SDK
-    android_sdk_owner:
-    # Configuration properties to use when building android releases
-    # aab/apk replace the default properties if provided
-    android_properties:
-    android_aab_properties:
-    android_apk_properties:
-    ## Install data source inputs
-    # Whether to download release assets from GitHub
-    use_github_releases: true
-    # The GitHub repository that releases assets for the desired release
-    github_releases_repo: renpy/renpy
-    # The GitHub token to use to query the api. Defaults to the workflow's token
-    github_token: ${{ github.token }}
-    # Whether to use Ren'Py's CDN
-    # If use_github is true, it will be search for the desired version first
-    use_cdn: true
-    # The base URL of the CDN that provides Ren'Py's releases' assets
-    cdn_url: https://www.renpy.org/dl
+| Key | Description | Default value |
+| :-- | :---------- | :------------ |
+| `action` | What the action should do. Must be one of: `install`, `distribute`, `android_build`, `lint`, `exec`, `translate`, and `nothing`. | `install` |
+| `install_dir` | Directory where Ren'Py is/will be installed. <br/> If the action is `install`, the directory may not exist. <br/> If the directory does not exist and the action is not `install`, the step will fail. | `~/.renpy_exec` |
+| `game` | Directory where the Ren'Py game is checked out | `.` |
+| `java_home` | Where the Java SDK is located (if not in `PATH` and `JAVA_HOME`) |  |
 
-    ### DISTRIBUTE INPUTS ###
-    # Comma/newline-separated list of packages that should
-    # be built
-    packages: all
-    # Directory where generated packages should be saved
-    out_dir: ""
+### Install inputs
 
-    ### ANDROID_BUILD INPUTS
-    # Whether to build an Universak APK (apk) or a Play Bundle (aab)
-    build_type: apk
-    # Directory where generated packages should be saved
-    out_dir: ""
+The following inputs are supported for the `install` action:
 
-    ### EXEC INPUTS
-    # The arguments to provide to Ren'Py
-    run: --help
-```
+| Key | Description | Default value | Example value |
+| :-- | :---------- | :------------ | :------------ |
+| `dlc` | Comma/space-separated list of Ren'Py DLCs to install. | | `steam rapt` |
+| `live2d_native` | Url or path of a live2d release to install. |  | `https://cubism.live2d.com/sdk-native/bin/CubismSdkForNative-5-r.5.zip` |
+| `live2d_web` | Url or path of a live2d release to install. |  | `https://cubism.live2d.com/sdk-web/bin/CubismSdkForWeb-5-r.5.zip` |
+| `update_path` | Whether Ren'Py's directory should be added to the PATH. | `true` |  |
+| `version` | Ren'Py version to install. Defaults to the latest GitHub Release. | `latest` | `8` |
+| `android_sdk` | Whether to install the Android SDK | `false` | |
+| `android_sdk_install_input` | Custom input to provide when installing the sdk. <br/> This is expert configuration, do not use it unless you have established a need for it. |  |  |
+| `android_sdk_owner` | If `android_sdk_install_input` is not provided, what company name to use when installing the SDK. |  | `Ayowel` |
+| `android_properties` | Configuration properties to use when building android releases. |  |  |
+| `android_aab_properties` | Override `android_properties` for aab builds. |  |  |
+| `android_apk_properties` | Override `android_properties` for aab builds. |  |  |
+| `use_github_releases` | Whether to download release assets from GitHub. <br/> Please only set this to `false` if you actually have issues when pulling releases from GitHub. | `true` | |
+| `github_releases_repo` | The source repository to use for GitHub releases. | `renpy/renpy` |  |
+| `github_token` | The GitHub token to use to query the api. Defaults to the workflow's token. | `${{ github.token }}` ||
+| `use_cdn` | Whether to download release assets directly from Ren'Py's CDN. | `true` |  |
+| `cdn_url` | The base URL of the CDN that provides Ren'Py's releases' assets. | `https://www.renpy.org/dl` |  |
+| `cache_strategy` | The caching strategy to use. Must be one of `all`, `none`, `save`, `load`. | `all` |  |
+| `cache_key` | The cache key to use. If not provided, it will be generated based on inputs. |  |  |
+
+### Distribute inputs
+
+The following inputs are supported for the `distribute` action:
+
+| Key | Description | Default value | Example value |
+| :-- | :---------- | :------------ | :------------ |
+| `packages` | Comma/newline-separated list of packages that should be built. | `all` |  |
+| `out_dir`| Directory where generated packages should be saved. |  | `target` |
+
+### Android build inputs
+
+The following inputs are supported for the `android_build` action:
+
+| Key | Description | Default value | Example value |
+| :-- | :---------- | :------------ | :------------ |
+| `build_type` | Whether to build an Universak APK (`apk`) or a Play Bundle (`aab`). | `apk` |  |
+| `out_dir` | Directory where generated packages should be saved. |  | `target` |
+
+### Translate inputs
+
+The following inputs are supported for the `translate` action:
+
+| Key | Description | Default value | Example value |
+| :-- | :---------- | :------------ | :------------ |
+| `languages` | The languages for which translations should be created or updated |  | `french, english` |
+
+### Exec inputs
+
+The following inputs are supported for the `exec` action:
+
+| Key | Description | Default value |
+| :-- | :---------- | :------------ |
+| `run` | The arguments to provide to Ren'Py in the command-line. | `--help` |
 
 ## Output
+
+The following outputs are available for all actions.
 
 | Output name | Description |
 | :---: | :--- |
 | __`install_dir`__ | Path to Ren'Py's install directory |
 | __`renpy_path`__ | Path to the Ren'Py executable |
 | __`python_path`__ | Path to the Python executable embedded in Ren'Py |
+
+### Install-only outputs
+
+The following outputs are only available for the `install` action:
+
+| Output name | Description |
+| :---: | :--- |
+| __`cache_hit`__ | Wether a cached Ren'Py install was found |
+| __`cache_save`__ | Wether the Ren'Py install was saved to cache |
+| __`cache_key`__ | The key used to save the Ren'Py install to cache |
