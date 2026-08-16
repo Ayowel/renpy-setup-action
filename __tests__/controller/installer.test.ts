@@ -34,7 +34,8 @@ describe('isInstallWorking', () => {
         android_sdk_owner: '',
         android_sdk_install_input: '',
         dlc_list: [],
-        live2d_url: '',
+        live2d_native: '',
+        live2d_web: '',
         update_path: false,
         version,
         cache_load: false,
@@ -46,6 +47,23 @@ describe('isInstallWorking', () => {
     },
     3 * 60 * 1000
   );
+});
+
+describe('Is installLive2D extraction working', () => {
+  let sdk_path = '';
+  const live2d_web_url = 'https://cubism.live2d.com/sdk-web/bin/CubismSdkForWeb-5-r.5.zip';
+  beforeEach(async () => {
+    const tc = await import('@actions/tool-cache');
+    sdk_path = await tc.downloadTool(live2d_web_url);
+  });
+  test('Extraction works for arbitrary files', async () => {
+    const { installLive2D } = await import('../../src/controller/installer');
+    await installLive2D(sdk_path, [[/^.*\/Core\/(live2dcubismcore.js)$/, path.join(tmpdir, '$1')]]);
+    await expect(fs.access(path.join(tmpdir, 'live2dcubismcore.js'))).resolves.toBe(undefined);
+    await expect(
+      fs.stat(path.join(tmpdir, 'live2dcubismcore.js')).then(r => r.size)
+    ).resolves.toBeGreaterThan(0);
+  });
 });
 
 describe('isDlcInstallWorking', () => {
@@ -62,7 +80,8 @@ describe('isDlcInstallWorking', () => {
         android_sdk_owner: '',
         android_sdk_install_input: '',
         dlc_list: dlcs,
-        live2d_url: '',
+        live2d_native: '',
+        live2d_web: '',
         update_path: false,
         version: renpy_version,
         cache_load: false,
@@ -118,7 +137,8 @@ describe('isDlcInstallWorking', () => {
           android_sdk_owner: 'AnOwnerName',
           android_sdk_install_input: '',
           dlc_list: ['rapt'],
-          live2d_url: '',
+          live2d_native: '',
+          live2d_web: '',
           update_path: false,
           version: renpy_version,
           cache_load: false,

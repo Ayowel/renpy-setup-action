@@ -1,9 +1,11 @@
 import * as fs from 'fs/promises';
+import * as fs_native from 'fs';
 import * as path from 'path';
 
 import * as core from '@actions/core';
 import * as cache from '@actions/cache';
 import * as tc from '@actions/tool-cache';
+import * as yauzl from 'yauzl';
 import { getLogger } from '../adapter/parameters';
 import { renpyPythonExec } from '../adapter/system';
 import { RenpyInstallerOptions, RenpyInstallOutputs } from '../model/parameters';
@@ -16,6 +18,39 @@ import { AssetDownload } from '../adapter/download/interface';
 import { is_promise_resolving } from '../utils';
 
 const logger = getLogger();
+
+export async function installLive2D(source_path: string, patterns: [RegExp, string][]) {
+  if (!(await is_promise_resolving(fs.access(source_path)))) {
+    source_path = await tc.downloadTool(source_path);
+  }
+  const zipfile = await yauzl.openPromise(source_path);
+  let extraction_counter = 0;
+  for await (const entry of zipfile.eachEntry()) {
+    if (entry.fileName.endsWith('/')) {
+      continue;
+    }
+    for (const pattern of patterns) {
+      if (entry.fileName.match(pattern[0]) == null) {
+        continue;
+      }
+      const target_path = entry.fileName.replace(pattern[0], pattern[1]);
+      core.debug(`Extracting file in ${source_path} from ${entry.fileName} to ${target_path}`);
+      fs.mkdir(path.dirname(target_path), { recursive: true });
+      const read_promise = await zipfile.openReadStreamPromise(entry);
+      read_promise.pipe(fs_native.createWriteStream(target_path));
+      await new Promise((resolve, reject) => {
+        read_promise.on('end', resolve);
+        read_promise.on('error', reject);
+      });
+      extraction_counter += 1;
+    }
+  }
+  zipfile.close();
+  if (extraction_counter == 0) {
+    throw Error(`Failed to extract files from ${source_path}`);
+  }
+  core.debug(`Extracted ${extraction_counter} files from ${source_path}.`);
+}
 
 export class RenpyInstaller {
   protected version: string;
@@ -59,11 +94,54 @@ export class RenpyInstaller {
         logger.debug('No DLC to install.');
       }
 
-      if (opts.live2d_url) {
-        logger.info('Install Live2D');
-        logger.error('Live2D is not supported yet.');
+      if (opts.live2d_native) {
+        logger.info('Install Live2D Native');
+        await installLive2D(opts.live2d_native, [
+          [
+            /^.*\/Core\/dll\/linux\/x86_64\/(libLive2DCubismCore.so)$/,
+            path.join(this.install_dir, 'lib/py3-linux-x86_64/$1')
+          ],
+          [
+            /^.*\/Core\/dll\/windows\/x86_64\/(Live2DCubismCore.dll)$/,
+            path.join(this.install_dir, 'lib/py3-windows-x86_64/$1')
+          ],
+          [
+            /^.*\/Core\/dll\/macos\/(libLive2DCubismCore\.dylib)$/,
+            path.join(this.install_dir, 'lib/py3-mac-universal/$1')
+          ],
+          [
+            /^.*\/Core\/dll\/experimental\/rpi\/(libLive2DCubismCore.so)$/,
+            path.join(this.install_dir, 'lib/py3-linux-armv7l/$1')
+          ],
+
+          [
+            /^.*\/Core\/dll\/android\/(armeabi-v7a\/libLive2DCubismCore.so)$/,
+            path.join(this.install_dir, 'rapt/prototype/renpyandroid/src/main/jniLibs/$1')
+          ],
+          [
+            /^.*\/Core\/dll\/android\/(arm64-v8a\/libLive2DCubismCore.so)$/,
+            path.join(this.install_dir, 'rapt/prototype/renpyandroid/src/main/jniLibs/$1')
+          ],
+          [
+            /^.*\/Core\/dll\/android\/(x86_64\/libLive2DCubismCore.so)$/,
+            path.join(this.install_dir, 'rapt/prototype/renpyandroid/src/main/jniLibs/$1')
+          ]
+        ]);
       } else {
-        logger.debug('No configured Live2D source');
+        logger.debug('No configured Live2D Native source');
+      }
+
+      if (opts.live2d_web) {
+        logger.info('Install Live2D Web');
+        //             (r".*/Core/live2dcubismcore.js", "lib/web/live2dcubismcore.js"),
+        await installLive2D(opts.live2d_web, [
+          [
+            /^.*\/Core\/live2dcubismcore.js$/,
+            path.join(this.install_dir, 'lib/web/live2dcubismcore.js')
+          ]
+        ]);
+      } else {
+        logger.debug('No configured Live2D Web source');
       }
 
       if (opts.android_sdk) {
